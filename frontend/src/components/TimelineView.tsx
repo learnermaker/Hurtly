@@ -1,53 +1,6 @@
 import { useState, useEffect } from "react";
 import type { AnatomicalRegion, TimelineData, TimelineEntry } from "@bodytrace/shared";
-
-export interface TimelineViewProps {
-  userId: string;
-  region: AnatomicalRegion;
-  onClose?: () => void;
-}
-
-// Mock service - will be wired to API later
-class MockSymptomTimelineService {
-  async getTimeline(userId: string, region: AnatomicalRegion): Promise<TimelineData> {
-    // Return mock data for now
-    return {
-      region,
-      entries: [],
-    };
-  }
-
-  computeTrend(data: TimelineData): "worsening" | "improving" | "stable" {
-    if (data.entries.length === 0) return "stable";
-    
-    const sortedEntries = [...data.entries].sort(
-      (a, b) => a.date.getTime() - b.date.getTime()
-    );
-    const firstDate = sortedEntries[0].date;
-    const lastDate = sortedEntries[sortedEntries.length - 1].date;
-    const daysDiff = (lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24);
-
-    if (daysDiff <= 7) return "stable";
-
-    const midpoint = Math.floor(sortedEntries.length / 2);
-    const earlyPeriod = sortedEntries.slice(0, midpoint);
-    const latePeriod = sortedEntries.slice(midpoint);
-
-    const earlyAvg =
-      earlyPeriod.reduce((sum, entry) => sum + entry.intensity, 0) / earlyPeriod.length;
-    const lateAvg =
-      latePeriod.reduce((sum, entry) => sum + entry.intensity, 0) / latePeriod.length;
-
-    const intensityChange = lateAvg - earlyAvg;
-    const threshold = 0.5;
-
-    if (intensityChange > threshold) return "worsening";
-    if (intensityChange < -threshold) return "improving";
-    return "stable";
-  }
-}
-
-const mockService = new MockSymptomTimelineService();
+import { getApiClient } from "../services/api-client";
 
 function getStatusColor(status: "appeared" | "active" | "resolved"): string {
   switch (status) {
@@ -72,6 +25,28 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, " ");
 }
 
+export interface TimelineViewProps {
+  userId: string;
+  region: AnatomicalRegion;
+  onClose?: () => void;
+}
+
+function computeTrend(data: TimelineData): "worsening" | "improving" | "stable" {
+  if (data.entries.length === 0) return "stable";
+  const sortedEntries = [...data.entries].sort((a, b) => a.date.getTime() - b.date.getTime());
+  const firstDate = sortedEntries[0].date;
+  const lastDate = sortedEntries[sortedEntries.length - 1].date;
+  const daysDiff = (lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24);
+  if (daysDiff <= 7) return "stable";
+  const midpoint = Math.floor(sortedEntries.length / 2);
+  const earlyAvg = sortedEntries.slice(0, midpoint).reduce((s, e) => s + e.intensity, 0) / midpoint;
+  const lateAvg = sortedEntries.slice(midpoint).reduce((s, e) => s + e.intensity, 0) / (sortedEntries.length - midpoint);
+  const diff = lateAvg - earlyAvg;
+  if (diff > 0.5) return "worsening";
+  if (diff < -0.5) return "improving";
+  return "stable";
+}
+
 export default function TimelineView({ userId, region, onClose }: TimelineViewProps) {
   const [timelineData, setTimelineData] = useState<TimelineData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -82,7 +57,12 @@ export default function TimelineView({ userId, region, onClose }: TimelineViewPr
       try {
         setLoading(true);
         setError(null);
-        const data = await mockService.getTimeline(userId, region);
+        const apiData = await getApiClient().getTimeline(userId, region);
+        // Normalize dates from API (they come as strings)
+        const data: TimelineData = {
+          region: apiData.region,
+          entries: apiData.entries.map((e) => ({ ...e, date: new Date(e.date) })),
+        };
         setTimelineData(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load timeline");
@@ -126,7 +106,7 @@ export default function TimelineView({ userId, region, onClose }: TimelineViewPr
     return daysDiff > 7;
   })();
 
-  const trend = showTrend ? mockService.computeTrend(timelineData) : null;
+  const trend = showTrend ? computeTrend(timelineData) : null;
 
   // Prepare data for the intensity graph
   const graphData = sortedEntries.map((entry) => ({

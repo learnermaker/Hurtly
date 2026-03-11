@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import type { BodyMap, BodyMapFilters } from "@bodytrace/shared";
+import type { BodyMap, MarkerFilter, PainMarker } from "@bodytrace/shared";
 import BodyMapView from "../components/BodyMapView";
 import { getApiClient } from "../services/api-client";
 import { DEMO_USER_ID } from "../config/constants";
@@ -8,7 +8,7 @@ export default function BodyMapPage() {
   const [bodyMap, setBodyMap] = useState<BodyMap | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState<BodyMapFilters>({});
+  const [_filters, setFilters] = useState<MarkerFilter>({});
 
   useEffect(() => {
     loadBodyMap();
@@ -29,10 +29,25 @@ export default function BodyMapPage() {
     }
   };
 
-  const handleFilterChange = (newFilters: BodyMapFilters) => {
+  const handleFilterChange = async (newFilters: MarkerFilter) => {
     setFilters(newFilters);
-    // In a real app, this would trigger a new API call
-    loadBodyMap();
+    const hasFilters = Object.values(newFilters).some((v) => v !== undefined && v !== null);
+    if (!hasFilters) {
+      loadBodyMap();
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const apiClient = getApiClient();
+      const result = await apiClient.filterBodyMap(DEMO_USER_ID, newFilters);
+      setBodyMap((prev) => prev ? { ...prev, markers: result.markers as PainMarker[] } : prev);
+    } catch (err) {
+      setError("Failed to filter body map");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

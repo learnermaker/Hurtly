@@ -1,59 +1,38 @@
 import { useState, useEffect } from "react";
-import type { TimelineData, BodyMap } from "@bodytrace/shared";
+import type { AnatomicalRegion } from "@bodytrace/shared";
 import TimelineView from "../components/TimelineView";
 import { getApiClient } from "../services/api-client";
 import { DEMO_USER_ID } from "../config/constants";
 
 export default function TimelinePage() {
-  const [timelines, setTimelines] = useState<TimelineData[]>([]);
+  const [regions, setRegions] = useState<AnatomicalRegion[]>([]);
+  const [selectedRegion, setSelectedRegion] = useState<AnatomicalRegion | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
 
   useEffect(() => {
-    loadTimelines();
+    loadRegions();
   }, []);
 
-  const loadTimelines = async () => {
+  const loadRegions = async () => {
     setLoading(true);
     setError(null);
     try {
       const apiClient = getApiClient();
-      
-      // First get the body map to see which regions have data
       const bodyMap = await apiClient.getBodyMap(DEMO_USER_ID);
-      
-      // Get unique regions from markers
-      const regions = new Map<string, { id: string; name: string }>();
+
+      // Extract unique regions from markers
+      const regionMap = new Map<string, AnatomicalRegion>();
       bodyMap.markers.forEach(marker => {
-        if (!regions.has(marker.location.region.id)) {
-          regions.set(marker.location.region.id, {
-            id: marker.location.region.id,
-            name: marker.location.region.name,
-          });
+        if (!regionMap.has(marker.location.region.id)) {
+          regionMap.set(marker.location.region.id, marker.location.region);
         }
       });
 
-      // Load timeline for each region
-      const timelinePromises = Array.from(regions.values()).map(async (region) => {
-        try {
-          return await apiClient.getTimeline(DEMO_USER_ID, {
-            id: region.id,
-            name: region.name,
-            bodySystem: "musculoskeletal",
-          });
-        } catch (err) {
-          console.error(`Failed to load timeline for ${region.name}:`, err);
-          return null;
-        }
-      });
-
-      const timelineResults = await Promise.all(timelinePromises);
-      const validTimelines = timelineResults.filter((t): t is TimelineData => t !== null && t.entries.length > 0);
-      
-      setTimelines(validTimelines);
-      if (validTimelines.length > 0) {
-        setSelectedRegion(validTimelines[0].region.id);
+      const uniqueRegions = Array.from(regionMap.values());
+      setRegions(uniqueRegions);
+      if (uniqueRegions.length > 0) {
+        setSelectedRegion(uniqueRegions[0]);
       }
     } catch (err) {
       setError("Failed to load timeline data");
@@ -62,8 +41,6 @@ export default function TimelinePage() {
       setLoading(false);
     }
   };
-
-  const selectedTimeline = timelines.find(t => t.region.id === selectedRegion);
 
   return (
     <div>
@@ -111,7 +88,7 @@ export default function TimelinePage() {
         </div>
       )}
 
-      {!loading && !error && timelines.length > 0 && (
+      {!loading && !error && regions.length > 0 && (
         <>
           {/* Region Selector */}
           <div style={{
@@ -125,8 +102,11 @@ export default function TimelinePage() {
               Select Region:
             </label>
             <select
-              value={selectedRegion || ""}
-              onChange={(e) => setSelectedRegion(e.target.value)}
+              value={selectedRegion?.id || ""}
+              onChange={(e) => {
+                const region = regions.find(r => r.id === e.target.value);
+                if (region) setSelectedRegion(region);
+              }}
               style={{
                 padding: "8px 12px",
                 fontSize: 14,
@@ -136,29 +116,32 @@ export default function TimelinePage() {
                 maxWidth: 300,
               }}
             >
-              {timelines.map((timeline) => (
-                <option key={timeline.region.id} value={timeline.region.id}>
-                  {timeline.region.name} ({timeline.entries.length} entries)
+              {regions.map((region) => (
+                <option key={region.id} value={region.id}>
+                  {region.name}
                 </option>
               ))}
             </select>
           </div>
 
           {/* Timeline View */}
-          {selectedTimeline && (
+          {selectedRegion && (
             <div style={{
               backgroundColor: "#fff",
               padding: 24,
               borderRadius: 8,
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
             }}>
-              <TimelineView timeline={selectedTimeline} />
+              <TimelineView
+                userId={DEMO_USER_ID}
+                region={selectedRegion}
+              />
             </div>
           )}
         </>
       )}
 
-      {!loading && !error && timelines.length === 0 && (
+      {!loading && !error && regions.length === 0 && (
         <div style={{
           backgroundColor: "#fff",
           padding: 48,

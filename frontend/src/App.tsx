@@ -144,7 +144,7 @@ function AppContent() {
         backgroundColor: "#fff",
       }}>
         <p style={{ margin: 0 }}>
-          BodyTrace © 2024 | 393 tests passing | Built with React + TypeScript + Three.js
+          BodyTrace © 2024 | Built with React + TypeScript + Three.js
         </p>
       </footer>
     </div>

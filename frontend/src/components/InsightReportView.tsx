@@ -1,29 +1,11 @@
 import { useState, useEffect } from "react";
-import type { InsightReport, BodyMap } from "@bodytrace/shared";
+import type { InsightReport } from "@bodytrace/shared";
+import { getApiClient } from "../services/api-client";
 
 export interface InsightReportViewProps {
   userId: string;
   onClose?: () => void;
 }
-
-// Mock service - will be wired to API later
-class MockInsightReportGenerator {
-  async generate(bodyMap: BodyMap): Promise<InsightReport> {
-    // Import the real generator dynamically
-    const { InsightReportGenerator } = await import("../../../backend/src/services/insight-report-generator");
-    const generator = new InsightReportGenerator();
-    return generator.generate(bodyMap);
-  }
-
-  async exportPDF(report: InsightReport): Promise<Buffer> {
-    // Import the real generator dynamically
-    const { InsightReportGenerator } = await import("../../../backend/src/services/insight-report-generator");
-    const generator = new InsightReportGenerator();
-    return generator.exportPDF(report);
-  }
-}
-
-const mockGenerator = new MockInsightReportGenerator();
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, " ");
@@ -51,17 +33,8 @@ export default function InsightReportView({ userId, onClose }: InsightReportView
       try {
         setLoading(true);
         setError(null);
-        
-        // Mock body map data - will be fetched from API later
-        const mockBodyMap: BodyMap = {
-          userId,
-          sessions: [],
-          markers: [],
-          descriptors: [],
-        };
-        
-        const generatedReport = await mockGenerator.generate(mockBodyMap);
-        setReport(generatedReport);
+        const generatedReport = await getApiClient().generateInsightReport(userId);
+        setReport({ ...generatedReport, generatedAt: new Date(generatedReport.generatedAt) });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to generate report");
       } finally {
@@ -77,10 +50,7 @@ export default function InsightReportView({ userId, onClose }: InsightReportView
 
     try {
       setExporting(true);
-      const pdfBuffer = await mockGenerator.exportPDF(report);
-      
-      // Create a blob and download
-      const blob = new Blob([pdfBuffer], { type: "application/pdf" });
+      const blob = await getApiClient().exportReportPDF(userId);
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;

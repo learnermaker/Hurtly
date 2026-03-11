@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { Link } from "react-router-dom";
 import type { PainMarker, AnatomicalLocation, SymptomDescriptor, FollowUpQuestion } from "@bodytrace/shared";
 import BodyModelRenderer from "../components/BodyModelRenderer";
 import CharacterizationPanel from "../components/CharacterizationPanel";
@@ -14,11 +15,13 @@ export default function PainSessionPage() {
   const [error, setError] = useState<string | null>(null);
   const [offlineMode, setOfflineMode] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [sessionSaved, setSessionSaved] = useState(false);
 
   const handleStartSession = useCallback(async () => {
     setLoading(true);
     setError(null);
     setSuccessMessage(null);
+    setSessionSaved(false);
     try {
       const apiClient = getApiClient();
       const session = await apiClient.createSession(DEMO_USER_ID);
@@ -130,16 +133,8 @@ export default function PainSessionPage() {
     try {
       const apiClient = getApiClient();
       await apiClient.saveSession(sessionId);
-      setSuccessMessage("Session saved successfully! You can view it in the Body Map or Timeline.");
-      
-      // Reset for new session
-      setTimeout(() => {
-        setSessionId(null);
-        setMarkers([]);
-        setCurrentMarker(null);
-        setFollowUpQuestions([]);
-        setSuccessMessage(null);
-      }, 3000);
+      setSessionSaved(true);
+      setSuccessMessage("Session saved successfully!");
     } catch (err) {
       if (err instanceof OfflineError) {
         setOfflineMode(true);
@@ -153,6 +148,16 @@ export default function PainSessionPage() {
       setLoading(false);
     }
   }, [sessionId]);
+
+  const handleNewSession = useCallback(() => {
+    setSessionId(null);
+    setMarkers([]);
+    setCurrentMarker(null);
+    setFollowUpQuestions([]);
+    setSuccessMessage(null);
+    setSessionSaved(false);
+    setError(null);
+  }, []);
 
   return (
     <div>
@@ -208,53 +213,116 @@ export default function PainSessionPage() {
           </div>
         )}
 
-        {/* Session Info */}
-        <div style={{
-          padding: 12,
-          marginBottom: 16,
-          backgroundColor: "#e3f2fd",
-          border: "1px solid #90caf9",
-          borderRadius: 4,
-        }}>
-          <strong>Session Status:</strong> {sessionId ? `Active (${markers.length} markers)` : "No active session"}
-        </div>
-
         {/* Controls */}
-        <div style={{ display: "flex", gap: 12 }}>
-          <button
-            onClick={handleStartSession}
-            disabled={loading || sessionId !== null}
-            style={{
-              padding: "12px 24px",
-              fontSize: 16,
-              backgroundColor: sessionId ? "#6c757d" : "#1565c0",
-              color: "#fff",
-              border: "none",
-              borderRadius: 4,
-              cursor: sessionId ? "not-allowed" : "pointer",
-              fontWeight: 500,
-            }}
-          >
-            {sessionId ? "Session Active" : "Start New Session"}
-          </button>
-
-          {sessionId && markers.length > 0 && (
+        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          {!sessionId && !sessionSaved && (
             <button
-              onClick={handleSaveSession}
+              onClick={handleStartSession}
               disabled={loading}
               style={{
                 padding: "12px 24px",
                 fontSize: 16,
-                backgroundColor: "#2e7d32",
+                backgroundColor: "#1565c0",
                 color: "#fff",
                 border: "none",
                 borderRadius: 4,
-                cursor: "pointer",
+                cursor: loading ? "not-allowed" : "pointer",
                 fontWeight: 500,
               }}
             >
-              Save Session
+              Start New Session
             </button>
+          )}
+
+          {sessionId && !sessionSaved && (
+            <>
+              <div style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 16px",
+                backgroundColor: "#e8f5e9",
+                border: "1px solid #4caf50",
+                borderRadius: 20,
+                fontSize: 14,
+                color: "#2e7d32",
+                fontWeight: 500,
+              }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#4caf50", display: "inline-block" }} />
+                Session Active — {markers.length} marker{markers.length !== 1 ? "s" : ""}
+              </div>
+
+              {markers.length > 0 && (
+                <button
+                  onClick={handleSaveSession}
+                  disabled={loading}
+                  style={{
+                    padding: "12px 24px",
+                    fontSize: 16,
+                    backgroundColor: "#2e7d32",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 4,
+                    cursor: loading ? "not-allowed" : "pointer",
+                    fontWeight: 500,
+                  }}
+                >
+                  {loading ? "Saving..." : "Save Session"}
+                </button>
+              )}
+            </>
+          )}
+
+          {sessionSaved && (
+            <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{
+                padding: "12px 20px",
+                backgroundColor: "#d4edda",
+                border: "1px solid #c3e6cb",
+                borderRadius: 4,
+                color: "#155724",
+                fontWeight: 500,
+              }}>
+                ✓ Session saved
+              </div>
+              <Link to="/body-map" style={{
+                padding: "12px 20px",
+                backgroundColor: "#1565c0",
+                color: "#fff",
+                borderRadius: 4,
+                textDecoration: "none",
+                fontWeight: 500,
+                fontSize: 14,
+              }}>
+                View Body Map →
+              </Link>
+              <Link to="/timeline" style={{
+                padding: "12px 20px",
+                backgroundColor: "#6a1b9a",
+                color: "#fff",
+                borderRadius: 4,
+                textDecoration: "none",
+                fontWeight: 500,
+                fontSize: 14,
+              }}>
+                View Timeline →
+              </Link>
+              <button
+                onClick={handleNewSession}
+                style={{
+                  padding: "12px 20px",
+                  backgroundColor: "#fff",
+                  color: "#1565c0",
+                  border: "1px solid #1565c0",
+                  borderRadius: 4,
+                  cursor: "pointer",
+                  fontWeight: 500,
+                  fontSize: 14,
+                }}
+              >
+                Start New Session
+              </button>
+            </div>
           )}
         </div>
       </div>
