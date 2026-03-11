@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import type { PainMarker, AnatomicalLocation, SymptomDescriptor, FollowUpQuestion } from "@bodytrace/shared";
-import BodyModelRenderer from "../components/BodyModelRenderer";
+import BodyRendererSwitcher from "../components/BodyRendererSwitcher";
 import CharacterizationPanel from "../components/CharacterizationPanel";
 import { getApiClient, ApiError, OfflineError } from "../services/api-client";
 import { DEMO_USER_ID } from "../config/constants";
@@ -342,7 +342,7 @@ export default function PainSessionPage() {
             <p style={{ color: "#666", fontSize: 14, marginBottom: 16 }}>
               Click on the 3D body model to mark where you're experiencing pain
             </p>
-            <BodyModelRenderer
+            <BodyRendererSwitcher
               markers={markers}
               onPointSelect={handlePointSelect}
               enableKeyboardNavigation={true}
