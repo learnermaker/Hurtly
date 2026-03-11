@@ -1,0 +1,44 @@
+{
+  "name": "bodytrace",
+  "version": "0.1.0",
+  "description": "Interactive health intelligence platform for tracking and analyzing pain symptoms",
+  "private": true,
+  "type": "module",
+  "author": "BodyTrace Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/learnermaker/bodytrace.git"
+  },
+  "bugs": {
+    "url": "https://github.com/learnermaker/bodytrace/issues"
+  },
+  "homepage": "https://github.com/learnermaker/bodytrace#readme",
+  "keywords": [
+    "health",
+    "pain-tracking",
+    "symptom-tracker",
+    "healthcare",
+    "3d-visualization",
+    "react",
+    "typescript",
+    "postgresql"
+  ],
+  "workspaces": [
+    "shared",
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:backend": "npm run dev --workspace=backend",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.3",
+    "typescript-eslint": "^8.57.0"
+  }
+}

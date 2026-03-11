@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Vite
+frontend/.vite/
+
+# Vitest
+coverage/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Kiro development files (should not be in public repos)
+.kiro/
+.config.kiro
+
+# Concept Docs (internal planning)
+Concept_Development/
