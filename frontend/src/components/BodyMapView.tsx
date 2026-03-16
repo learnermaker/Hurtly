@@ -5,7 +5,7 @@ import type {
   SymptomDescriptor,
   MarkerFilter,
 } from "@bodytrace/shared";
-import BodyModelRenderer from "./BodyModelRenderer";
+import BodyRendererSwitcher from "./BodyRendererSwitcher";
 import { getAllRegions } from "../services/anatomical-region-mapper";
 
 const PAIN_TYPES: PainType[] = [
@@ -130,9 +130,8 @@ export default function BodyMapView({
     >
       {/* Left: 3D Model */}
       <div style={{ flex: 1, minHeight: 500, position: "relative" }}>
-        <BodyModelRenderer
+        <BodyRendererSwitcher
           markers={filteredMarkers}
-          showBodyMap={true}
         />
         {/* Clickable marker list overlay for selection */}
         <div

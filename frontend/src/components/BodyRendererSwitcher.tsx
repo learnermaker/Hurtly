@@ -75,55 +75,47 @@ export default function BodyRendererSwitcher({
 
   return (
     <div>
-      {/* Mode selector */}
+      {/* Mode selector — dropdown */}
       <div style={{
         display: "flex",
-        gap: 8,
+        alignItems: "center",
+        gap: 10,
         marginBottom: 16,
         padding: "10px 12px",
         backgroundColor: "#f5f5f5",
         borderRadius: 8,
-        flexWrap: "wrap",
-        alignItems: "center",
       }}>
-        <span style={{ fontSize: 12, color: "#666", fontWeight: 500, marginRight: 4 }}>
+        <label
+          htmlFor="body-renderer-select"
+          style={{ fontSize: 13, color: "#555", fontWeight: 500, whiteSpace: "nowrap" }}
+        >
           Body Model:
-        </span>
-        {MODES.map((m) => (
-          <button
-            key={m.id}
-            onClick={() => m.available && handleModeChange(m.id)}
-            disabled={!m.available}
-            title={m.description}
-            aria-pressed={mode === m.id}
-            style={{
-              padding: "6px 14px",
-              fontSize: 13,
-              borderRadius: 4,
-              border: `1px solid ${mode === m.id ? "#1565c0" : "#ccc"}`,
-              backgroundColor: mode === m.id ? "#1565c0" : m.available ? "#fff" : "#f0f0f0",
-              color: mode === m.id ? "#fff" : m.available ? "#333" : "#aaa",
-              cursor: m.available ? "pointer" : "not-allowed",
-              fontWeight: mode === m.id ? 600 : 400,
-              position: "relative",
-            }}
-          >
-            {m.label}
-            {!m.available && (
-              <span style={{
-                marginLeft: 6,
-                fontSize: 10,
-                backgroundColor: "#e0e0e0",
-                color: "#888",
-                padding: "1px 5px",
-                borderRadius: 8,
-              }}>
-                soon
-              </span>
-            )}
-          </button>
-        ))}
-        <span style={{ fontSize: 11, color: "#999", marginLeft: 4 }}>
+        </label>
+        <select
+          id="body-renderer-select"
+          value={mode}
+          onChange={(e) => {
+            const val = e.target.value as BodyRendererMode;
+            const m = MODES.find((m) => m.id === val);
+            if (m?.available) handleModeChange(val);
+          }}
+          style={{
+            padding: "8px 12px",
+            fontSize: 13,
+            borderRadius: 4,
+            border: "1px solid #ccc",
+            backgroundColor: "#fff",
+            cursor: "pointer",
+            minWidth: 200,
+          }}
+        >
+          {MODES.map((m) => (
+            <option key={m.id} value={m.id} disabled={!m.available}>
+              {m.label}{!m.available ? " (coming soon)" : ""}
+            </option>
+          ))}
+        </select>
+        <span style={{ fontSize: 12, color: "#999" }}>
           {MODES.find((m) => m.id === mode)?.description}
         </span>
       </div>
