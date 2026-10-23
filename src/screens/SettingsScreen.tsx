@@ -6,6 +6,8 @@ import { allEntries, db, replaceAll } from "../lib/db";
 import { download, parseBackup, toBackup } from "../lib/export";
 import { errorText } from "../lib/format";
 
+const REPO_URL = "https://github.com/learnermaker/BodyTrace";
+
 const AI_CHOICES: { mode: AiMode; title: string; sub: string }[] = [
   { mode: "device", title: "On this device", sub: "Private and free. Uses the browser's built-in model; nothing leaves your device." },
   { mode: "gemini", title: "Gemini with your own key", sub: "Works in any browser. Text goes to Google under your key." },
@@ -55,7 +57,7 @@ export function SettingsScreen() {
   }
 
   async function exportBackup() {
-    download(`bodytrace-backup-${new Date().toISOString().slice(0, 10)}.json`, toBackup(await allEntries()), "application/json");
+    download(`hurtly-backup-${new Date().toISOString().slice(0, 10)}.json`, toBackup(await allEntries()), "application/json");
   }
 
   async function importBackup(file: File) {
@@ -103,7 +105,7 @@ export function SettingsScreen() {
           <>
             <p className="muted">
               Your key is stored only in this browser. When you use an AI feature, what you typed and the related entries go
-              straight from this device to Google. Nothing passes through BodyTrace.
+              straight from this device to Google. Nothing passes through Hurtly.
             </p>
             <label className="label" htmlFor="key">Gemini API key</label>
             <div className="key-row">
@@ -161,8 +163,12 @@ export function SettingsScreen() {
       <section className="block">
         <h2 className="block-head">About</h2>
         <p className="muted">
-          BodyTrace is a personal pain diary. It doesn't diagnose or give medical advice. If pain is sudden, severe or
+          Hurtly is a personal pain diary. It doesn't diagnose or give medical advice. If pain is sudden, severe or
           comes with other worrying symptoms, contact a medical professional or emergency services.
+        </p>
+        <p className="muted">
+          Hurtly is free and open source under the AGPL-3.0 licence. Read the code, report a problem or suggest an idea{" "}
+          <a href={REPO_URL} target="_blank" rel="noreferrer">on GitHub</a>.
         </p>
       </section>
     </div>

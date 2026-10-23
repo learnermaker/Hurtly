@@ -37,19 +37,21 @@ export function toCsv(entries: Entry[]): string {
 }
 
 export interface Backup {
-  app: "bodytrace";
+  app: "hurtly";
   version: 1;
   exportedAt: string;
   entries: Entry[];
 }
 
 export function toBackup(entries: Entry[]): string {
-  const b: Backup = { app: "bodytrace", version: 1, exportedAt: new Date().toISOString(), entries };
+  const b: Backup = { app: "hurtly", version: 1, exportedAt: new Date().toISOString(), entries };
   return JSON.stringify(b, null, 2);
 }
 
 export function parseBackup(text: string): Entry[] {
   const data = JSON.parse(text) as Partial<Backup>;
-  if (data.app !== "bodytrace" || !Array.isArray(data.entries)) throw new Error("This file isn't a BodyTrace backup.");
+  // "bodytrace" backups come from before the app was renamed.
+  const fromApp = (data as { app?: string }).app;
+  if ((fromApp !== "hurtly" && fromApp !== "bodytrace") || !Array.isArray(data.entries)) throw new Error("This file isn't a Hurtly backup.");
   return data.entries.filter((e) => typeof e?.id === "string" && typeof e.createdAt === "number" && Array.isArray(e.regions));
 }

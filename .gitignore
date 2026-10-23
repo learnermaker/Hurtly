@@ -35,10 +35,3 @@ coverage/
 
 # TypeScript build info
 *.tsbuildinfo
-
-# Kiro development files (should not be in public repos)
-.kiro/
-.config.kiro
-
-# Concept Docs (internal planning)
-Concept_Development/
