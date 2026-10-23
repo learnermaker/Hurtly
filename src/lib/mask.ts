@@ -113,11 +113,41 @@ export function brushLine(mask: Mask, view: View, a: [number, number], b: [numbe
   return changed;
 }
 
+/**
+ * Fills or clears a whole area. A fill is the ellipse that fits the area,
+ * so a named area reads as a soft patch rather than a block with the
+ * straight edges of its zone.
+ */
 export function setRegion(mask: Mask, view: View, regionId: string, value: 0 | 1): void {
   const idx = REGION_INDEX.get(regionId);
   if (idx === undefined) return;
   const map = cellRegions(view);
-  for (let i = 0; i < CELLS; i++) if (map[i] === idx) mask[i] = value;
+  const fit = value === 1 ? ellipseOf(view, idx) : null;
+  for (let i = 0; i < CELLS; i++) {
+    if (map[i] !== idx) continue;
+    if (fit && ((i % COLS) - fit.cx) ** 2 / fit.rx ** 2 + (Math.floor(i / COLS) - fit.cy) ** 2 / fit.ry ** 2 > 1) continue;
+    mask[i] = value;
+  }
+}
+
+const ellipses = new Map<string, { cx: number; cy: number; rx: number; ry: number }>();
+
+/** The ellipse inscribed in the bounding box of an area's cells, in cell units. */
+function ellipseOf(view: View, idx: number) {
+  const key = `${view}:${idx}`;
+  const hit = ellipses.get(key);
+  if (hit) return hit;
+  const map = cellRegions(view);
+  let [c0, r0, c1, r1] = [COLS, ROWS, -1, -1];
+  for (let i = 0; i < CELLS; i++) {
+    if (map[i] !== idx) continue;
+    const c = i % COLS;
+    const r = Math.floor(i / COLS);
+    [c0, r0, c1, r1] = [Math.min(c0, c), Math.min(r0, r), Math.max(c1, c), Math.max(r1, r)];
+  }
+  const fit = { cx: (c0 + c1) / 2, cy: (r0 + r1) / 2, rx: (c1 - c0) / 2 + 0.5, ry: (r1 - r0) / 2 + 0.5 };
+  ellipses.set(key, fit);
+  return fit;
 }
 
 export function paintFromRegions(regions: string[]): Paint {

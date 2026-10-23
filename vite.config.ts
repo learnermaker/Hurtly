@@ -12,8 +12,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["icon.svg"],
       manifest: {
-        name: "BodyTrace",
-        short_name: "BodyTrace",
+        name: "Hurtly",
+        short_name: "Hurtly",
         description: "Mark where it hurts and keep a history your clinician can read.",
         theme_color: "#1d2b30",
         background_color: "#f2f4f1",

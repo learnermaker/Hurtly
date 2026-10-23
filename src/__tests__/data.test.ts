@@ -16,7 +16,8 @@ it("round-trips a backup and rejects other files", async () => {
   const json = toBackup(await allEntries());
   await replaceAll(parseBackup(json));
   expect((await allEntries())[0].followUps[0].answer).toBe("A");
-  expect(() => parseBackup('{"hello":1}')).toThrow(/isn't a BodyTrace backup/);
+  expect(parseBackup(json.replace('"app": "hurtly"', '"app": "bodytrace"'))).toHaveLength(1);
+  expect(() => parseBackup('{"hello":1}')).toThrow(/isn't a Hurtly backup/);
 });
 
 it("quotes CSV cells that contain commas or quotes", () => {

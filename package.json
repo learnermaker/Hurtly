@@ -1,13 +1,14 @@
 {
-  "name": "bodytrace",
+  "name": "hurtly",
   "version": "0.2.0",
-  "description": "Mark where it hurts, describe it in plain words, and turn it into a history your clinician can read.",
+  "description": "Paint where it hurts, describe it in plain words, and keep a history your clinician can read.",
   "private": true,
   "type": "module",
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
+  "homepage": "https://body-trace.vercel.app",
   "repository": {
     "type": "git",
-    "url": "https://github.com/learnermaker/bodytrace.git"
+    "url": "https://github.com/learnermaker/BodyTrace.git"
   },
   "scripts": {
     "dev": "vite",

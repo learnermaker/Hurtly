@@ -1,6 +1,7 @@
 import Dexie, { type EntityTable } from "dexie";
 import type { Entry } from "./types";
 
+// Named after the app's original name; renaming the database would orphan existing entries.
 export const db = new Dexie("bodytrace") as Dexie & {
   entries: EntityTable<Entry, "id">;
 };

@@ -1,0 +1,11 @@
+name: Idea or request
+description: Suggest something that would make Hurtly more useful.
+labels: [idea]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What would help?
+      description: Describe the situation and what you wish Hurtly did. Living with pain, or a clinician? Say so, it helps.
+    validations:
+      required: true

@@ -12,6 +12,7 @@ export interface Settings {
 /** Alias that Google keeps pointed at the current Flash model. */
 export const DEFAULT_MODEL = "gemini-flash-latest";
 
+// Storage keys keep the app's original name so existing entries and settings survive the rename.
 const KEY = "bodytrace.settings";
 const DEFAULTS: Settings = { aiMode: "off", geminiKey: "", model: DEFAULT_MODEL };
 

@@ -145,12 +145,12 @@ export function ReportScreen() {
               </section>
             )}
 
-            <p className="fine">Self-reported in BodyTrace. Intensity is on a 0–10 scale, where 10 is the worst imaginable. This is a personal record, not a diagnosis.</p>
+            <p className="fine">Self-reported in Hurtly. Intensity is on a 0–10 scale, where 10 is the worst imaginable. This is a personal record, not a diagnosis.</p>
           </article>
 
           <div className="row no-print report-actions">
             <button type="button" className="btn btn-primary" onClick={() => window.print()}>Print or save as PDF</button>
-            <button type="button" className="btn btn-quiet" onClick={() => download(`bodytrace-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(scoped), "text/csv")}>
+            <button type="button" className="btn btn-quiet" onClick={() => download(`hurtly-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(scoped), "text/csv")}>
               Download spreadsheet
             </button>
           </div>

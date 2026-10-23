@@ -33,6 +33,10 @@ describe("painting", () => {
     expect(regionsInMask(m, "back")).toEqual([]);
   });
 
+  it("recognises every area filled by name as exactly that area", () => {
+    for (const r of REGIONS) expect(regionsInPaint(paintFromRegions([r.id])), r.id).toEqual([r.id]);
+  });
+
   it("fills named areas on every view they appear on", () => {
     const p = paintFromRegions(["shoulder-r", "lower-back-r"]);
     expect(regionsInMask(p.front, "front")).toEqual(["shoulder-r"]);
