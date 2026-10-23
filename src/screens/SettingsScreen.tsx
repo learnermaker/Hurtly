@@ -6,7 +6,7 @@ import { allEntries, db, replaceAll } from "../lib/db";
 import { download, parseBackup, toBackup } from "../lib/export";
 import { errorText } from "../lib/format";
 
-const REPO_URL = "https://github.com/learnermaker/BodyTrace";
+const REPO_URL = "https://github.com/learnermaker/Hurtly";
 
 const AI_CHOICES: { mode: AiMode; title: string; sub: string }[] = [
   { mode: "device", title: "On this device", sub: "Private and free. Uses the browser's built-in model; nothing leaves your device." },

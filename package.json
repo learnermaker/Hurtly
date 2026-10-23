@@ -8,7 +8,7 @@
   "homepage": "https://body-trace.vercel.app",
   "repository": {
     "type": "git",
-    "url": "https://github.com/learnermaker/BodyTrace.git"
+    "url": "https://github.com/learnermaker/Hurtly.git"
   },
   "scripts": {
     "dev": "vite",

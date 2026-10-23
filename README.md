@@ -64,7 +64,7 @@ src/
   screens/                   History, Area, Report, Settings
 ```
 
-Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
+See [ROADMAP.md](ROADMAP.md) for what's planned next. Contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
