@@ -1,16 +1,13 @@
 import { useMemo } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { allEntries } from "../lib/db";
-import { dailySeries, summarizeRegions } from "../lib/stats";
+import { useEntries } from "../lib/hooks";
+import { TREND_LABEL, dailySeries, summarizeRegions } from "../lib/stats";
 import { formatDate, relativeDays } from "../lib/format";
 import { regionLabel } from "../data/regions";
 import { intensityColor } from "../lib/color";
 import { EntryRow } from "../components/EntryRow";
-import { TREND_TEXT } from "./HistoryScreen";
-import type { Entry } from "../lib/types";
 
 export function RegionScreen({ regionId }: { regionId: string }) {
-  const entries = useLiveQuery(allEntries, [], undefined as Entry[] | undefined);
+  const entries = useEntries();
   const mine = useMemo(() => (entries ?? []).filter((e) => e.kind === "pain" && e.regions.includes(regionId)), [entries, regionId]);
   const summary = useMemo(() => summarizeRegions(mine).find((s) => s.regionId === regionId), [mine, regionId]);
   const series = useMemo(() => dailySeries(mine, regionId), [mine, regionId]);
@@ -41,7 +38,7 @@ export function RegionScreen({ regionId }: { regionId: string }) {
           </dl>
 
           <section className="block">
-            <h2 className="block-head">{TREND_TEXT[summary.trend]}</h2>
+            <h2 className="block-head">{TREND_LABEL[summary.trend]}</h2>
             <TrendChart points={series} />
           </section>
 

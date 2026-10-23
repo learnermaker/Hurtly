@@ -5,7 +5,7 @@
 
 const BASE = "https://generativelanguage.googleapis.com/v1beta";
 
-export class GeminiError extends Error {
+class GeminiError extends Error {
   constructor(message: string, readonly status?: number) {
     super(message);
   }
@@ -34,7 +34,7 @@ async function call(path: string, key: string, init?: RequestInit): Promise<unkn
   return res.json();
 }
 
-export interface JsonRequest {
+interface JsonRequest {
   key: string;
   model: string;
   system: string;

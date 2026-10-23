@@ -9,7 +9,7 @@ db.version(1).stores({
   entries: "id, createdAt, kind, *regions",
 });
 
-export function newId(): string {
+function newId(): string {
   return crypto.randomUUID();
 }
 

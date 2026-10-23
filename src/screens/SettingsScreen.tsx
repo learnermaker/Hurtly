@@ -3,6 +3,7 @@ import { DEFAULT_MODEL, updateSettings, useSettings } from "../lib/settings";
 import { listModels } from "../lib/gemini";
 import { allEntries, db, replaceAll } from "../lib/db";
 import { download, parseBackup, toBackup } from "../lib/export";
+import { errorText } from "../lib/format";
 
 export function SettingsScreen() {
   const s = useSettings();
@@ -23,7 +24,7 @@ export function SettingsScreen() {
       updateSettings({ geminiKey: key, aiEnabled: true });
       setStatus({ kind: "ok", text: "Connected. AI features are on." });
     } catch (e) {
-      setStatus({ kind: "error", text: e instanceof Error ? e.message : "Couldn't check the key." });
+      setStatus({ kind: "error", text: errorText(e, "Couldn't check the key.") });
     }
   }
 
@@ -45,7 +46,7 @@ export function SettingsScreen() {
       await replaceAll(entries);
       setDataMsg(`Restored ${entries.length} entries.`);
     } catch (e) {
-      setDataMsg(e instanceof Error ? e.message : "Couldn't read that file.");
+      setDataMsg(errorText(e, "Couldn't read that file."));
     }
   }
 

@@ -5,7 +5,7 @@
   --ink-2: #56676c;
   --line: #d6ddd9;
   --body: #d5ddd8;
-  --body-hover: #c3cec8;
+  --body-edge: #aebbb5;
   --accent: #17656a;
   --accent-ink: #ffffff;
   --accent-soft: #dcecea;
@@ -29,7 +29,7 @@
     --ink-2: #9cadad;
     --line: #2c393d;
     --body: #34433f;
-    --body-hover: #415350;
+    --body-edge: #56696a;
     --accent: #62bfba;
     --accent-ink: #0b1b1c;
     --accent-soft: #1f3a3a;
@@ -210,9 +210,10 @@ textarea.input { resize: vertical; }
 .bodyc:not(.bodyc--edit) .bodyc-stage { cursor: pointer; }
 .bodyc--log .bodyc-stage { width: auto; height: min(54dvh, 520px); margin: 0 auto; }
 .bodyc-layer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.silhouette path { fill: var(--body); stroke: var(--body); stroke-width: 5; stroke-linejoin: round; }
-.seam { fill: transparent; stroke: var(--paper); stroke-width: 0.7; opacity: 0.8; }
-.seam:focus-visible { outline: none; stroke: var(--accent); stroke-width: 2.5; opacity: 1; }
+.silhouette { fill: var(--body); stroke: var(--body-edge); stroke-width: 0.9; stroke-linejoin: round; }
+.landmarks path { fill: none; stroke: var(--body-edge); stroke-width: 0.8; stroke-linecap: round; opacity: 0.7; }
+.zone { fill: transparent; stroke: none; }
+.zone:focus-visible { outline: none; fill: var(--accent-soft); fill-opacity: 0.6; stroke: var(--accent); stroke-width: 1.5; }
 .spread { stroke: var(--ink); stroke-linecap: round; fill: none; }
 .arrowhead { fill: var(--ink); }
 .bodyc-side { position: absolute; top: 4px; font-size: 13px; font-weight: 800; color: var(--ink-2); }

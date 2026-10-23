@@ -25,8 +25,6 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,woff2}"],
-        // Never cache AI calls.
-        navigateFallbackDenylist: [/^\/api/],
       },
     }),
   ],

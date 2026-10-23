@@ -1,11 +1,11 @@
-import type { Draft } from "./types";
+import type { Entry } from "./types";
 import { REGION_BY_ID } from "../data/regions";
 
 /**
  * Plain rule checks that run offline, before any AI. They never block saving;
  * they surface guidance when a combination can signal an emergency.
  */
-export function safetyNotice(d: Pick<Draft, "regions" | "intensity" | "qualities" | "note">): string | null {
+export function safetyNotice(d: Pick<Entry, "regions" | "intensity" | "qualities" | "note">): string | null {
   const groups = new Set(d.regions.map((r) => REGION_BY_ID[r]?.group));
   const text = (d.note ?? "").toLowerCase();
 
