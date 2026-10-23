@@ -1,206 +1,53 @@
 # BodyTrace
 
-An interactive health intelligence platform for tracking and analyzing pain symptoms over time.
+Mark where it hurts, describe it in plain words, and keep a history your clinician can read.
 
-## Overview
+BodyTrace is a personal pain diary that installs on your phone. It's built around one loop:
 
-BodyTrace is a comprehensive health tracking application that allows users to:
-- Record pain locations on an interactive 3D body model
-- Characterize symptoms with detailed descriptors
-- Track symptom progression over time
-- Generate insight reports with patterns and trends
-- Export data for healthcare providers
+1. **Mark it.** Tap areas on a front/back body figure, or say it in your own words ("burning in my lower right back, about a 6, worse when I sit").
+2. **Describe it.** Choose a 0–10 intensity and what it feels like. More detail (pattern, what makes it worse or better, what it gets in the way of) is optional.
+3. **Watch it change.** Each area gets its own timeline: when it started, typical and worst intensity, and whether it's getting worse, easing or holding steady.
+4. **Share it.** A one-page report you can print or save as a PDF for a doctor or physio, plus a spreadsheet export.
 
-## Features
+Logging a known area again takes two taps ("Log again"), and "No pain today" check-ins keep good days in the record, not just bad ones.
 
-- **Interactive 3D Body Model**: Click or drag on a 3D human figure to mark pain locations
-- **Symptom Characterization**: Detailed pain type, intensity, frequency, and duration tracking
-- **AI-Powered Follow-ups**: Context-aware questions based on symptom patterns
-- **Timeline View**: Chronological visualization of symptom progression
-- **Insight Reports**: Automated analysis of patterns, trends, and intensity changes
-- **Accessibility**: Full keyboard navigation and screen reader support
-- **Offline Support**: Continue tracking even without internet connection
-- **Security**: AES-256 encryption, TLS 1.2+, and comprehensive audit logging
+## Privacy: local-first, bring your own key
 
-## Tech Stack
+- **Your entries stay on your device** (IndexedDB). There's no account and no server. Export a backup from Settings to move them to another device.
+- **AI is optional and runs on your own Gemini key.** Paste a key from [Google AI Studio](https://aistudio.google.com/apikey) in Settings. The key is stored only in your browser, and AI requests go straight from your device to Google. With AI off, everything still works, with built-in follow-up questions instead.
 
-### Frontend
-- React 19 + TypeScript
-- Three.js for 3D rendering
-- Vite for build tooling
-- Vitest for testing
+What the AI does:
 
-### Backend
-- Node.js + Express
-- PostgreSQL database
-- TypeScript
-- Property-based testing with fast-check
+| Feature | Without AI | With your Gemini key |
+|---|---|---|
+| Logging | Tap the body figure or search areas | Also: describe it by voice or text and the form fills itself; you check it before saving |
+| Follow-up questions | A fixed set of plain-language questions | 1–2 questions based on your history ("Last time you said it spread to your leg…") |
+| Report | Tables, body map, your notes | Also: a short summary written in your words, plus questions to ask your clinician |
 
-### Testing
-- 393 total tests (232 backend + 161 frontend)
-- Unit tests and integration tests
-- Property-based tests for correctness validation
+The AI never diagnoses or suggests treatment, and anything it returns is checked against the app's own lists before it's used. Safety guidance for emergency warning signs (for example, crushing chest pain) comes from fixed rules that work offline.
 
-## Project Structure
+## Development
 
-```
-bodytrace/
-├── frontend/          # React frontend application
-│   ├── src/
-│   │   ├── components/    # UI components
-│   │   ├── services/      # API client and utilities
-│   │   └── __tests__/     # Test files
-├── backend/           # Node.js backend API
-│   ├── src/
-│   │   ├── routes/        # API routes
-│   │   ├── services/      # Business logic
-│   │   ├── middleware/    # Auth and logging
-│   │   ├── db/           # Database migrations
-│   │   └── __tests__/    # Test files
-├── shared/            # Shared TypeScript types
-└── package.json       # Workspace configuration
-```
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+ and npm
-- PostgreSQL 14+
-- Git
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/learnermaker/bodytrace.git
-cd bodytrace
-```
-
-2. Install dependencies:
 ```bash
 npm install
+npm run dev        # http://localhost:5173
+npm test           # unit tests (Vitest)
+npm run build      # type-check and build the PWA into dist/
 ```
 
-3. Set up the database:
-```bash
-# Create PostgreSQL database
-createdb bodytrace
+Stack: React 19, TypeScript, Vite, Dexie (IndexedDB), vite-plugin-pwa. The build is a static site and runs from any static host or sub-path.
 
-# Run migrations
-cd backend
-npm run migrate
+```
+src/
+  data/regions.ts     body areas and figure outlines (left/right handled per view)
+  data/questions.ts   offline follow-up questions
+  lib/ai.ts           Gemini prompts and checks on everything the AI returns
+  lib/gemini.ts       minimal BYOK Gemini REST client
+  lib/stats.ts        per-area summaries, trends, daily series
+  lib/safety.ts       offline emergency-warning rules
+  screens/            Log, History, Area detail, Report, Settings
 ```
 
-4. Configure environment variables:
-```bash
-# Create .env file in backend directory
-cp backend/.env.example backend/.env
+## Not medical advice
 
-# Edit backend/.env with your database credentials:
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=bodytrace
-DB_USER=postgres
-DB_PASSWORD=your_password
-```
-
-5. Start the development servers:
-```bash
-# Terminal 1 - Backend
-npm run dev:backend
-
-# Terminal 2 - Frontend
-npm run dev:frontend
-```
-
-6. Open your browser to `http://localhost:5173`
-
-## Running Tests
-
-```bash
-# Run all tests
-npm test
-
-# Run backend tests only
-npm test --workspace=backend
-
-# Run frontend tests only
-npm test --workspace=frontend
-```
-
-## Database Setup
-
-The application requires PostgreSQL. Run the migration script to create the necessary tables:
-
-```bash
-cd backend
-node src/db/run-migration.ts
-```
-
-Or manually run the SQL migration:
-```bash
-psql -U postgres -d bodytrace -f backend/src/db/migrations/001_initial_schema.sql
-```
-
-## API Documentation
-
-The backend exposes a REST API with the following endpoints:
-
-- `POST /api/pain-sessions` - Create a new pain tracking session
-- `GET /api/pain-sessions/:id` - Retrieve a session
-- `POST /api/pain-sessions/:id/markers` - Add pain markers
-- `GET /api/body-map/:userId` - Get complete body map
-- `POST /api/body-map/:userId/filter` - Filter markers
-- `GET /api/timeline/:userId/region/:regionId` - Get timeline data
-- `POST /api/insight-reports/:userId` - Generate insight report
-- `POST /api/insight-reports/:userId/export` - Export report as PDF
-
-All endpoints require authentication via Bearer token.
-
-## Security Features
-
-- **Encryption**: AES-256-GCM for data at rest
-- **Authentication**: Token-based authentication on all endpoints
-- **TLS**: TLS 1.2+ for data in transit
-- **Audit Logging**: Comprehensive logging without sensitive content
-- **Data Deletion**: Complete user data removal on request
-
-## Accessibility
-
-BodyTrace follows WCAG 2.1 Level AA guidelines:
-- Full keyboard navigation support
-- Screen reader compatibility
-- Text-based alternatives for 3D interactions
-- Proper ARIA labels and semantic HTML
-- Sufficient color contrast ratios
-- Minimum touch target sizes (44x44px)
-
-## Property-Based Testing
-
-The application uses property-based testing to validate correctness properties:
-- 25 correctness properties defined
-- Automated testing with fast-check library
-- Properties cover data integrity, security, and functional equivalence
-
-## Contributing
-
-This is a demonstration project. If you'd like to contribute:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes with tests
-4. Ensure all tests pass
-5. Submit a pull request
-
-## License
-
-This project is private and not licensed for public use.
-
-## Disclaimer
-
-This application is for informational purposes only and does not constitute medical advice. Always consult with qualified healthcare professionals for medical concerns.
-
-## Support
-
-For questions or issues, please open an issue on GitHub.
+BodyTrace is a personal record. It doesn't diagnose or give medical advice. If pain is sudden or severe, or comes with other worrying symptoms, contact a medical professional or emergency services.

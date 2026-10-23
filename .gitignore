@@ -28,7 +28,7 @@ Thumbs.db
 npm-debug.log*
 
 # Vite
-frontend/.vite/
+.vite/
 
 # Vitest
 coverage/
