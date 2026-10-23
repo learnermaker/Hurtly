@@ -1,4 +1,5 @@
 import { normalizeParsed, parseDescription } from "../lib/ai";
+import { toJsonSchema } from "../lib/ondevice";
 import { updateSettings } from "../lib/settings";
 
 const geminiReply = (obj: unknown) =>
@@ -17,7 +18,7 @@ it("keeps only values the app understands from AI output", () => {
 });
 
 describe("Gemini requests", () => {
-  beforeEach(() => updateSettings({ geminiKey: "test-key", aiEnabled: true, model: "gemini-flash-latest" }));
+  beforeEach(() => updateSettings({ geminiKey: "test-key", aiMode: "gemini", model: "gemini-flash-latest" }));
   afterEach(() => vi.restoreAllMocks());
 
   it("sends the user's own key with a JSON schema", async () => {
@@ -35,5 +36,40 @@ describe("Gemini requests", () => {
   it("explains a rejected key in plain words", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response('{"error":{"message":"API key not valid"}}', { status: 400 }));
     await expect(parseDescription("my head")).rejects.toThrow(/didn't accept that key/);
+  });
+});
+
+describe("on-device model", () => {
+  afterEach(() => {
+    delete (globalThis as { LanguageModel?: unknown }).LanguageModel;
+    updateSettings({ aiMode: "off" });
+  });
+
+  it("converts Gemini-style nullable fields to JSON Schema", () => {
+    expect(
+      toJsonSchema({
+        type: "object",
+        properties: { n: { type: "integer", nullable: true }, p: { type: "string", enum: ["a", "b"], nullable: true }, xs: { type: "array", items: { type: "string" } } },
+      }),
+    ).toEqual({
+      type: "object",
+      properties: { n: { type: ["integer", "null"] }, p: { type: ["string", "null"], enum: ["a", "b", null] }, xs: { type: "array", items: { type: "string" } } },
+    });
+  });
+
+  it("runs on the browser's model with a JSON Schema constraint, and never calls the network", async () => {
+    const prompt = vi.fn().mockResolvedValue(JSON.stringify({ regions: ["head"], intensity: null, qualities: [], pattern: null, triggers: [], relief: [], impact: [], note: "" }));
+    const destroy = vi.fn();
+    (globalThis as { LanguageModel?: unknown }).LanguageModel = {
+      availability: vi.fn().mockResolvedValue("available"),
+      create: vi.fn().mockResolvedValue({ prompt, destroy }),
+    };
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    updateSettings({ aiMode: "device" });
+
+    expect((await parseDescription("headache")).regions).toEqual(["head"]);
+    expect(prompt.mock.calls[0][1].responseConstraint.properties.intensity.type).toEqual(["integer", "null"]);
+    expect(destroy).toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

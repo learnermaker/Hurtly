@@ -1,7 +1,10 @@
 import { useSyncExternalStore } from "react";
 
+/** Where AI features run: the browser's built-in model, Gemini with the user's key, or nowhere. */
+export type AiMode = "off" | "device" | "gemini";
+
 export interface Settings {
-  aiEnabled: boolean;
+  aiMode: AiMode;
   geminiKey: string;
   model: string;
 }
@@ -10,7 +13,7 @@ export interface Settings {
 export const DEFAULT_MODEL = "gemini-flash-latest";
 
 const KEY = "bodytrace.settings";
-const DEFAULTS: Settings = { aiEnabled: false, geminiKey: "", model: DEFAULT_MODEL };
+const DEFAULTS: Settings = { aiMode: "off", geminiKey: "", model: DEFAULT_MODEL };
 
 let cache: Settings = load();
 const listeners = new Set<() => void>();
@@ -18,7 +21,11 @@ const listeners = new Set<() => void>();
 function load(): Settings {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? { ...DEFAULTS, ...JSON.parse(raw) } : DEFAULTS;
+    if (!raw) return DEFAULTS;
+    const { aiEnabled, ...saved } = JSON.parse(raw);
+    // Settings saved before on-device AI had an on/off flag for Gemini instead of a mode.
+    if (!saved.aiMode) saved.aiMode = aiEnabled && saved.geminiKey ? "gemini" : "off";
+    return { ...DEFAULTS, ...saved };
   } catch {
     return DEFAULTS;
   }
@@ -39,7 +46,7 @@ export function updateSettings(patch: Partial<Settings>): void {
 }
 
 export function aiReady(s: Settings = cache): boolean {
-  return s.aiEnabled && s.geminiKey.trim().length > 0;
+  return s.aiMode === "device" || (s.aiMode === "gemini" && s.geminiKey.trim().length > 0);
 }
 
 export function useSettings(): Settings {

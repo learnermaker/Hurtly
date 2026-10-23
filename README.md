@@ -11,14 +11,17 @@ BodyTrace is a personal pain diary that installs on your phone. It's built aroun
 
 Logging a known area again takes two taps ("Log again"), and "No pain today" check-ins keep good days in the record, not just bad ones.
 
-## Privacy: local-first, bring your own key
+## Privacy: local-first, AI on your terms
 
 - **Your entries stay on your device** (IndexedDB). There's no account and no server. Export a backup from Settings to move them to another device.
-- **AI is optional and runs on your own Gemini key.** Paste a key from [Google AI Studio](https://aistudio.google.com/apikey) in Settings. The key is stored only in your browser, and AI requests go straight from your device to Google. With AI off, everything still works, with built-in follow-up questions instead.
+- **AI is optional.** Choose in Settings where it runs:
+  - **On this device:** the browser's built-in model (Chrome's Prompt API, desktop Chrome 148+). It's free and private, and nothing you type leaves the device. The model downloads once.
+  - **Gemini with your own key:** works in any browser. Paste a key from [Google AI Studio](https://aistudio.google.com/apikey); it's stored only in your browser, and requests go straight from your device to Google.
+  - **Off:** built-in follow-up questions instead.
 
 What the AI does:
 
-| Feature | Without AI | With your Gemini key |
+| Feature | Without AI | With AI |
 |---|---|---|
 | Logging | Paint on the body figure or search areas | Also: describe it by voice or text and the form fills itself; you check it before saving |
 | Follow-up questions | A fixed set of plain-language questions | 1–2 questions based on your history ("Last time you said it spread to your leg…") |
@@ -45,6 +48,7 @@ src/
   data/questions.ts   offline follow-up questions
   lib/ai.ts           Gemini prompts and checks on everything the AI returns
   lib/gemini.ts       minimal BYOK Gemini REST client
+  lib/ondevice.ts     the browser's built-in model (Prompt API)
   lib/stats.ts        per-area summaries, trends, daily series
   lib/safety.ts       offline emergency-warning rules
   screens/log/        Log screen, its sheets, and the paint editor hook
