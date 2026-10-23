@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { BodyFigure } from "../components/BodyFigure";
+import { BodyCanvas } from "../components/BodyCanvas";
 import { Sparkline } from "../components/Controls";
 import { EntryRow } from "../components/EntryRow";
 import { RangePicker } from "../components/RangePicker";
 import { allEntries } from "../lib/db";
-import { dailySeries, heat, inRange, summarizeRegions, type Trend } from "../lib/stats";
+import { dailySeries, inRange, summarizeRegions, type Trend } from "../lib/stats";
+import { heatCells } from "../lib/mask";
 import { dayKey, daysAgo, formatDay, relativeDays } from "../lib/format";
 import { regionLabel } from "../data/regions";
 import { navigate } from "../lib/route";
@@ -24,7 +25,8 @@ export function HistoryScreen() {
 
   const scoped = useMemo(() => (entries ? (days ? inRange(entries, daysAgo(days)) : entries) : []), [entries, days]);
   const regions = useMemo(() => summarizeRegions(scoped), [scoped]);
-  const h = useMemo(() => heat(scoped), [scoped]);
+  const heatFront = useMemo(() => heatCells(scoped, "front"), [scoped]);
+  const heatBack = useMemo(() => heatCells(scoped, "back"), [scoped]);
   const byDay = useMemo(() => {
     const m = new Map<string, Entry[]>();
     for (const e of [...scoped].reverse()) {
@@ -59,8 +61,8 @@ export function HistoryScreen() {
       </header>
 
       <div className="figure-pair">
-        <BodyFigure view="front" heat={h} onToggle={(id) => h[id] !== undefined && openRegion(id)} label="Front: highest intensity per area" />
-        <BodyFigure view="back" heat={h} onToggle={(id) => h[id] !== undefined && openRegion(id)} label="Back: highest intensity per area" />
+        <BodyCanvas view="front" heat={heatFront} onRegionTap={openRegion} label="Front view: where you've had pain, coloured by the worst intensity. Choose an area to see its history." />
+        <BodyCanvas view="back" heat={heatBack} onRegionTap={openRegion} label="Back view: where you've had pain, coloured by the worst intensity. Choose an area to see its history." />
       </div>
 
       <section className="block">

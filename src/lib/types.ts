@@ -1,3 +1,5 @@
+import type { Drawing } from "./mask";
+
 export const QUALITIES = [
   "aching",
   "sharp",
@@ -56,6 +58,8 @@ export interface Entry {
   /** "clear" is a pain-free check-in, so gaps in the log aren't mistaken for good days. */
   kind: "pain" | "clear";
   regions: string[];
+  /** Where it was painted on the figure. Older entries have only regions. */
+  drawing?: Drawing;
   /** 0–10. */
   intensity: number;
   qualities: Quality[];

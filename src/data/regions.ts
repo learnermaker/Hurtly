@@ -31,6 +31,9 @@ export interface Shape {
   regionId: string;
   view: View;
   d: string;
+  contains: (x: number, y: number) => boolean;
+  /** [minX, minY, maxX, maxY], for cheap rejection before contains(). */
+  bbox: [number, number, number, number];
 }
 
 type Pt = [number, number];
@@ -45,8 +48,44 @@ function mirror(points: Pt[]): Pt[] {
   return points.map(([x, y]) => [W - x, y] as Pt);
 }
 
-function ellipse(cx: number, cy: number, rx: number, ry: number): string {
+interface Ellipse {
+  cx: number;
+  cy: number;
+  rx: number;
+  ry: number;
+}
+
+type Geometry = Pt[] | Ellipse;
+
+function pathOf(g: Geometry): string {
+  if (Array.isArray(g)) return poly(g);
+  const { cx, cy, rx, ry } = g;
   return `M${cx - rx} ${cy} a${rx} ${ry} 0 1 0 ${rx * 2} 0 a${rx} ${ry} 0 1 0 ${-rx * 2} 0 Z`;
+}
+
+function containsFn(g: Geometry): (x: number, y: number) => boolean {
+  if (!Array.isArray(g)) return (x, y) => ((x - g.cx) / g.rx) ** 2 + ((y - g.cy) / g.ry) ** 2 <= 1;
+  // Even-odd ray casting.
+  return (x, y) => {
+    let inside = false;
+    for (let i = 0, j = g.length - 1; i < g.length; j = i++) {
+      const [xi, yi] = g[i];
+      const [xj, yj] = g[j];
+      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  };
+}
+
+function bboxOf(g: Geometry): Shape["bbox"] {
+  if (!Array.isArray(g)) return [g.cx - g.rx, g.cy - g.ry, g.cx + g.rx, g.cy + g.ry];
+  const xs = g.map((p) => p[0]);
+  const ys = g.map((p) => p[1]);
+  return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+}
+
+function shape(regionId: string, view: View, g: Geometry): Shape {
+  return { regionId, view, d: pathOf(g), contains: containsFn(g), bbox: bboxOf(g) };
 }
 
 // Viewer-left outlines, reused for both views.
@@ -80,9 +119,9 @@ function add(region: Region) {
   if (!REGIONS.some((r) => r.id === region.id)) REGIONS.push(region);
 }
 
-function center(id: string, label: string, group: Group, view: View, d: string) {
+function center(id: string, label: string, group: Group, view: View, g: Geometry) {
   add({ id, label, side: "center", group });
-  SHAPES.push({ regionId: id, view, d });
+  SHAPES.push(shape(id, view, g));
 }
 
 /** Adds the left and right versions of a region, drawn on the given views. */
@@ -93,7 +132,7 @@ function paired(base: string, label: string, group: Group, views: View[], pts: P
     for (const view of views) {
       // The viewer-left outline belongs to the body's right in front view and left in back view.
       const onViewerLeft = (view === "front") === (side === "right");
-      SHAPES.push({ regionId: id, view, d: poly(onViewerLeft ? pts : mirror(pts)) });
+      SHAPES.push(shape(id, view, onViewerLeft ? pts : mirror(pts)));
     }
   }
 }
@@ -101,10 +140,10 @@ function paired(base: string, label: string, group: Group, views: View[], pts: P
 const BOTH: View[] = ["front", "back"];
 
 // Head and neck
-center("head", "Head / face", "head", "front", ellipse(100, 40, 22, 27));
-center("head-back", "Back of head", "head", "back", ellipse(100, 40, 22, 27));
-center("neck-front", "Front of neck", "neck", "front", poly([[90, 64], [110, 64], [112, 82], [88, 82]]));
-center("neck-back", "Back of neck", "neck", "back", poly([[90, 64], [110, 64], [112, 82], [88, 82]]));
+center("head", "Head / face", "head", "front", { cx: 100, cy: 40, rx: 22, ry: 27 });
+center("head-back", "Back of head", "head", "back", { cx: 100, cy: 40, rx: 22, ry: 27 });
+center("neck-front", "Front of neck", "neck", "front", [[90, 64], [110, 64], [112, 82], [88, 82]]);
+center("neck-back", "Back of neck", "neck", "back", [[90, 64], [110, 64], [112, 82], [88, 82]]);
 
 // Shoulders and arms
 paired("shoulder", "shoulder", "shoulder", BOTH, G.shoulder);
@@ -115,14 +154,14 @@ paired("hand", "wrist / hand", "arm", BOTH, G.hand);
 
 // Front torso
 paired("chest", "chest", "chest", ["front"], G.upperTorsoHalf);
-center("upper-abdomen", "Upper abdomen", "abdomen", "front", poly([[73, 143], [127, 143], [126, 186], [74, 186]]));
-center("lower-abdomen", "Lower abdomen", "abdomen", "front", poly([[74, 188], [126, 188], [128, 222], [72, 222]]));
-center("groin", "Groin / pelvis", "pelvis", "front", poly([[87, 224], [113, 224], [110, 252], [100, 258], [90, 252]]));
+center("upper-abdomen", "Upper abdomen", "abdomen", "front", [[73, 143], [127, 143], [126, 186], [74, 186]]);
+center("lower-abdomen", "Lower abdomen", "abdomen", "front", [[74, 188], [126, 188], [128, 222], [72, 222]]);
+center("groin", "Groin / pelvis", "pelvis", "front", [[87, 224], [113, 224], [110, 252], [100, 258], [90, 252]]);
 paired("hip", "hip", "pelvis", ["front"], FRONT_ONLY.hip);
 
 // Back torso
 paired("upper-back", "upper back", "back", ["back"], G.upperTorsoHalf);
-center("mid-back", "Mid back", "back", "back", poly([[73, 143], [127, 143], [126, 186], [74, 186]]));
+center("mid-back", "Mid back", "back", "back", [[73, 143], [127, 143], [126, 186], [74, 186]]);
 paired("lower-back", "lower back", "back", ["back"], BACK_ONLY.lowerBack);
 paired("glute", "buttock", "pelvis", ["back"], BACK_ONLY.glute);
 

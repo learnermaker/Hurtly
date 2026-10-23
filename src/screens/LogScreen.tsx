@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { BodyFigure } from "../components/BodyFigure";
+import { BodyCanvas, type Tool } from "../components/BodyCanvas";
 import { Chips, Field, IntensityScale, Sheet } from "../components/Controls";
 import { Toast } from "../components/Toast";
 import { REGIONS, primaryView, regionLabel, type View } from "../data/regions";
@@ -9,7 +9,8 @@ import { addEntry, allEntries, db, lastEntryFor } from "../lib/db";
 import { followUpQuestions, parseDescription, type Question } from "../lib/ai";
 import { aiReady, useSettings } from "../lib/settings";
 import { safetyNotice } from "../lib/safety";
-import { heat, inRange, summarizeRegions } from "../lib/stats";
+import { inRange, summarizeRegions } from "../lib/stats";
+import { clearRegion, clonePaint, emptyPaint, heatCells, paintFromRegions, paintOf, regionsInPaint, setRegion, toDrawing, type Paint } from "../lib/mask";
 import { daysAgo } from "../lib/format";
 import { listen, speechSupported } from "../lib/speech";
 import { navigate } from "../lib/route";
@@ -28,44 +29,90 @@ import {
 
 type Step = null | "describe" | "find" | "details" | "saved";
 
+const UNDO_LIMIT = 40;
+
+function mergePaint(a: Paint, b: Paint): Paint {
+  const out = clonePaint(a);
+  for (let i = 0; i < out.front.length; i++) {
+    out.front[i] |= b.front[i];
+    out.back[i] |= b.back[i];
+  }
+  out.arrows.push(...b.arrows);
+  return out;
+}
+
 export function LogScreen({ repeat }: { repeat: string | null }) {
   const settings = useSettings();
   const entries = useLiveQuery(allEntries, [], [] as Entry[]);
   const [view, setView] = useState<View>("front");
-  const [selected, setSelected] = useState<string[]>([]);
+  const [tool, setTool] = useState<Tool>("paint");
+  const [paint, setPaintState] = useState<Paint>(emptyPaint);
+  const [version, setVersion] = useState(0);
+  const undoStack = useRef<Paint[]>([]);
   const [step, setStep] = useState<Step>(null);
   const [draft, setDraft] = useState<Draft>(emptyDraft());
   const [saved, setSaved] = useState<Entry | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const clearToast = useCallback(() => setToast(null), []);
 
-  const recentHeat = useMemo(() => heat(inRange(entries, daysAgo(14))), [entries]);
+  // Painting mutates `paint` in place, so `version` is what invalidates derived values.
+  const regions = useMemo(() => regionsInPaint(paint), [paint, version]);
+  const painted = useMemo(() => ({ front: paint.front.some(Boolean), back: paint.back.some(Boolean) }), [paint, version]);
+  const recent = useMemo(() => inRange(entries, daysAgo(14)), [entries]);
+  const recentHeat = useMemo(() => heatCells(recent, view), [recent, view]);
   const recentSpots = useMemo(() => summarizeRegions(inRange(entries, daysAgo(60))).slice(0, 6), [entries]);
 
-  function toggle(id: string) {
-    setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  function pushUndo(before: Paint) {
+    undoStack.current.push(before);
+    if (undoStack.current.length > UNDO_LIMIT) undoStack.current.shift();
   }
 
-  function openDetails(d: Draft) {
+  /** Replaces the paint with a new object (so the canvas redraws), keeping an undo step. */
+  function setPaint(next: Paint, undoable = true) {
+    if (undoable) pushUndo(clonePaint(paint));
+    setPaintState(next);
+    setVersion((v) => v + 1);
+  }
+
+  function undo() {
+    const prev = undoStack.current.pop();
+    if (prev) {
+      setPaintState(prev);
+      setVersion((v) => v + 1);
+    }
+  }
+
+  function toggleRegion(id: string) {
+    const next = clonePaint(paint);
+    if (regions.includes(id)) clearRegion(next, id);
+    else for (const v of ["front", "back"] as const) setRegion(next[v], v, id, 1);
+    setPaint(next);
+  }
+
+  function openDetails(d: Draft, p: Paint) {
     setDraft(d);
-    setSelected(d.regions);
-    if (d.regions[0]) setView(primaryView(d.regions[0]));
+    setPaint(p);
+    const first = d.regions[0];
+    if (first && !p[view].some(Boolean)) setView(primaryView(first));
     setStep("details");
   }
 
   async function logAgain(regionId: string) {
     const last = await lastEntryFor(regionId);
-    if (!last) return openDetails(emptyDraft([regionId]));
-    openDetails({
-      regions: last.regions,
-      intensity: last.intensity,
-      qualities: last.qualities,
-      pattern: last.pattern,
-      triggers: last.triggers,
-      relief: last.relief,
-      impact: last.impact,
-      source: "repeat",
-    });
+    if (!last) return openDetails(emptyDraft([regionId]), paintFromRegions([regionId]));
+    openDetails(
+      {
+        regions: last.regions,
+        intensity: last.intensity,
+        qualities: last.qualities,
+        pattern: last.pattern,
+        triggers: last.triggers,
+        relief: last.relief,
+        impact: last.impact,
+        source: "repeat",
+      },
+      clonePaint(paintOf(last)),
+    );
   }
 
   // Arriving from "Log it again" on a region page.
@@ -77,10 +124,18 @@ export function LogScreen({ repeat }: { repeat: string | null }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repeat]);
 
+  function removeFromDraft(id: string) {
+    const next = clonePaint(paint);
+    clearRegion(next, id);
+    setPaint(next);
+    setDraft({ ...draft, regions: regionsInPaint(next) });
+  }
+
   async function save() {
-    const entry = await addEntry({ ...draft, kind: "pain", followUps: [] });
+    const entry = await addEntry({ ...draft, regions: regionsInPaint(paint), drawing: toDrawing(paint), kind: "pain", followUps: [] });
     setSaved(entry);
-    setSelected([]);
+    setPaint(emptyPaint(), false);
+    undoStack.current = [];
     setStep("saved");
   }
 
@@ -90,6 +145,7 @@ export function LogScreen({ repeat }: { repeat: string | null }) {
   }
 
   const ai = aiReady(settings);
+  const hasPaint = painted.front || painted.back || paint.arrows.length > 0;
 
   return (
     <div className="log">
@@ -99,26 +155,56 @@ export function LogScreen({ repeat }: { repeat: string | null }) {
           {(["front", "back"] as const).map((v) => (
             <button key={v} type="button" role="radio" aria-checked={view === v} className={`seg-btn${view === v ? " is-on" : ""}`} onClick={() => setView(v)}>
               {v === "front" ? "Front" : "Back"}
+              {painted[v] && view !== v && <span className="seg-dot" aria-label="(painted)" />}
             </button>
           ))}
         </div>
       </header>
 
-      <div className="figure-stage">
-        <BodyFigure view={view} selected={selected} heat={recentHeat} onToggle={toggle} className="figure--log" label={`Body, ${view} view. Tap areas that hurt.`} />
-        <p className="figure-caption">
-          {view === "front" ? "Facing you — your right is on the left" : "From behind — your left is on the left"}
-        </p>
+      <BodyCanvas
+        view={view}
+        paint={paint}
+        tool={tool}
+        heat={recentHeat}
+        selected={regions}
+        onStrokeStart={pushUndo}
+        onChange={() => setVersion((v) => v + 1)}
+        onRegionToggle={toggleRegion}
+        className="bodyc--log"
+        label={`Body, ${view} view. Paint where it hurts, or use Tab and Enter to select areas.`}
+      />
+      <p className="figure-caption">
+        {view === "front" ? "Facing you, so your right side is on the left" : "From behind, so your left side is on the left"}
+      </p>
+
+      <div className="tools" role="toolbar" aria-label="Drawing tools">
+        <div className="seg" role="radiogroup" aria-label="Tool">
+          {(
+            [
+              ["paint", "Paint"],
+              ["erase", "Erase"],
+              ["arrow", "Spreads"],
+            ] as const
+          ).map(([t, name]) => (
+            <button key={t} type="button" role="radio" aria-checked={tool === t} className={`seg-btn${tool === t ? " is-on" : ""}`} onClick={() => setTool(t)}>
+              {name}
+            </button>
+          ))}
+        </div>
+        <button type="button" className="icon-btn" onClick={undo} disabled={undoStack.current.length === 0} aria-label="Undo">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </button>
       </div>
+      {tool === "arrow" && <p className="tool-hint">Drag from where the pain starts to where it travels.</p>}
 
       <div className="log-actions">
-        {selected.length > 0 ? (
+        {hasPaint ? (
           <div className="selection">
-            <p className="selection-text">{selected.map(regionLabel).join(", ")}</p>
+            <p className="selection-text">{regions.length ? regions.map(regionLabel).join(", ") : "Paint a little more so the area is clear"}</p>
             <div className="row">
-              <button type="button" className="btn btn-quiet" onClick={() => setSelected([])}>Clear</button>
-              <button type="button" className="btn btn-primary" onClick={() => openDetails({ ...emptyDraft(selected) })}>
-                Describe {selected.length > 1 ? `${selected.length} areas` : "it"}
+              <button type="button" className="btn btn-quiet" onClick={() => setPaint(emptyPaint())}>Clear</button>
+              <button type="button" className="btn btn-primary" disabled={regions.length === 0} onClick={() => openDetails(emptyDraft(regions), paint)}>
+                Describe it
               </button>
             </div>
           </div>
@@ -136,7 +222,7 @@ export function LogScreen({ repeat }: { repeat: string | null }) {
           </>
         )}
 
-        {recentSpots.length > 0 && selected.length === 0 && (
+        {recentSpots.length > 0 && !hasPaint && (
           <section className="recent" aria-label="Log a recent area again">
             <h2 className="mini-head">Log again</h2>
             <div className="chips">
@@ -150,9 +236,14 @@ export function LogScreen({ repeat }: { repeat: string | null }) {
         )}
       </div>
 
-      <DescribeSheet open={step === "describe"} ai={ai} onClose={() => setStep(null)} onParsed={openDetails} />
-      <FindSheet open={step === "find"} selected={selected} onToggle={toggle} onClose={() => setStep(null)} />
-      <DetailsSheet open={step === "details"} draft={draft} onChange={setDraft} onClose={() => setStep(null)} onSave={save} />
+      <DescribeSheet
+        open={step === "describe"}
+        ai={ai}
+        onClose={() => setStep(null)}
+        onParsed={(d) => openDetails(d, mergePaint(paint, paintFromRegions(d.regions)))}
+      />
+      <FindSheet open={step === "find"} selected={regions} onToggle={toggleRegion} onClose={() => setStep(null)} />
+      <DetailsSheet open={step === "details"} draft={draft} onChange={setDraft} onRemoveRegion={removeFromDraft} onClose={() => setStep(null)} onSave={save} />
       <SavedSheet open={step === "saved"} entry={saved} history={entries} ai={ai} onClose={() => setStep(null)} />
       <Toast message={toast} onDone={clearToast} />
     </div>
@@ -292,7 +383,21 @@ function FindSheet({ open, selected, onToggle, onClose }: { open: boolean; selec
   );
 }
 
-function DetailsSheet({ open, draft, onChange, onClose, onSave }: { open: boolean; draft: Draft; onChange: (d: Draft) => void; onClose: () => void; onSave: () => void }) {
+function DetailsSheet({
+  open,
+  draft,
+  onChange,
+  onRemoveRegion,
+  onClose,
+  onSave,
+}: {
+  open: boolean;
+  draft: Draft;
+  onChange: (d: Draft) => void;
+  onRemoveRegion: (id: string) => void;
+  onClose: () => void;
+  onSave: () => void;
+}) {
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => onChange({ ...draft, [k]: v });
   const notice = safetyNotice(draft);
   const hasMore = !!(draft.pattern || draft.triggers.length || draft.relief.length || draft.impact.length || draft.note);
@@ -311,7 +416,7 @@ function DetailsSheet({ open, draft, onChange, onClose, onSave }: { open: boolea
       {draft.regions.length > 1 && (
         <div className="chips" aria-label="Areas">
           {draft.regions.map((r) => (
-            <button key={r} type="button" className="chip is-on" onClick={() => set("regions", draft.regions.filter((x) => x !== r))} aria-label={`Remove ${regionLabel(r)}`}>
+            <button key={r} type="button" className="chip is-on" onClick={() => onRemoveRegion(r)} aria-label={`Remove ${regionLabel(r)}`}>
               {regionLabel(r)} ×
             </button>
           ))}

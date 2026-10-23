@@ -74,16 +74,6 @@ export function summarizeRegions(entries: Entry[]): RegionSummary[] {
   return out.sort((a, b) => b.last - a.last);
 }
 
-/** Highest intensity per region, for colouring the body figure. */
-export function heat(entries: Entry[]): Record<string, number> {
-  const out: Record<string, number> = {};
-  for (const e of entries) {
-    if (e.kind !== "pain") continue;
-    for (const r of e.regions) out[r] = Math.max(out[r] ?? 0, e.intensity);
-  }
-  return out;
-}
-
 /** One point per day: the day's highest intensity for the region. */
 export function dailySeries(entries: Entry[], regionId: string): { day: string; t: number; value: number }[] {
   const byDay = new Map<string, { t: number; value: number }>();
