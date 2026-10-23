@@ -7,7 +7,7 @@ Thanks for helping. Hurtly is a hobby and mission project, so small, focused con
 - **Report a bug or confusing moment** using the issue templates. Screenshots help.
 - **Share what it's like to use** if you live with pain. What would make logging easier on a bad day?
 - **Clinicians:** tell us what would make the report more useful in an appointment.
-- **Code:** for anything bigger than a small fix, open an issue first so we can agree on the approach.
+- **Code:** pick something from the [roadmap](ROADMAP.md). For anything bigger than a small fix, open an issue first so we can agree on the approach.
 
 ## Running it
 
