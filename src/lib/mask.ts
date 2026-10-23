@@ -1,9 +1,9 @@
 /**
  * Painted pain areas, stored as a bitmask over a fine grid laid on the
- * 200×470 figure. Each grid cell belongs to at most one body region, so
- * the regions an entry covers can always be derived from what was painted.
+ * 200×470 figure. Each grid cell inside the body belongs to exactly one
+ * area, so the areas an entry covers can always be worked out from the paint.
  */
-import { REGIONS, SHAPES, type View } from "../data/regions";
+import { REGIONS, SHAPES, SILHOUETTE, type View } from "../data/regions";
 import type { Entry } from "./types";
 
 export const W = 200;
@@ -42,39 +42,23 @@ const cellMaps: Partial<Record<View, Int16Array>> = {};
 export function cellRegions(view: View): Int16Array {
   const cached = cellMaps[view];
   if (cached) return cached;
-  const shapes = SHAPES.filter((s) => s.view === view);
+  const zones = SHAPES.filter((s) => s.view === view);
   const map = new Int16Array(CELLS).fill(-1);
-  const at = (x: number, y: number) => {
-    const s = shapes.find(({ bbox: [x0, y0, x1, y1], contains }) => x >= x0 && x <= x1 && y >= y0 && y <= y1 && contains(x, y));
-    return s ? REGION_INDEX.get(s.regionId)! : -1;
-  };
   for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) map[r * COLS + c] = at((c + 0.5) * CELL, (r + 0.5) * CELL);
-  }
-  // The figure is drawn with rounded outlines that close the small gaps between
-  // regions, so cells in those seams join the nearest region.
-  const fill = map.slice();
-  const reach = [2.5, 4];
-  const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1], [0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]];
-  for (let r = 0; r < ROWS; r++) {
+    const y = (r + 0.5) * CELL;
+    const xs = SILHOUETTE.crossings(y);
     for (let c = 0; c < COLS; c++) {
-      const i = r * COLS + c;
-      if (map[i] !== -1) continue;
       const x = (c + 0.5) * CELL;
-      const y = (r + 0.5) * CELL;
-      search: for (const d of reach) {
-        for (const [dx, dy] of dirs) {
-          const hit = at(x + dx * d, y + dy * d);
-          if (hit !== -1) {
-            fill[i] = hit;
-            break search;
-          }
-        }
-      }
+      // Inside the outline when an odd number of crossings lie to the left.
+      let left = 0;
+      while (left < xs.length && xs[left] < x) left++;
+      if (left % 2 === 0) continue;
+      const z = zones.find(({ bbox: [x0, y0, x1, y1], contains }) => x >= x0 && x <= x1 && y >= y0 && y <= y1 && contains(x, y));
+      if (z) map[r * COLS + c] = REGION_INDEX.get(z.regionId)!;
     }
   }
-  cellMaps[view] = fill;
-  return fill;
+  cellMaps[view] = map;
+  return map;
 }
 
 export function regionAt(view: View, x: number, y: number): string | null {

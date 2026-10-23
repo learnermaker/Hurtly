@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { shapesFor, regionLabel, type View } from "../data/regions";
+import { LANDMARKS, SILHOUETTE, shapesFor, regionLabel, type View } from "../data/regions";
 import { brushLine, CELL, COLS, H, ROWS, W, clonePaint, regionAt, type Arrow, type Paint } from "../lib/mask";
 import { intensityColor } from "../lib/color";
 
@@ -74,7 +74,10 @@ export function BodyCanvas(props: Props) {
     const k = (size.w / W) * zoom.s * dpr;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, c.width, c.height);
+    ctx.save();
     ctx.setTransform(k, 0, 0, k, -zoom.x * k, -zoom.y * k);
+    // Keep the soft edges of the paint inside the body.
+    ctx.clip(new Path2D(SILHOUETTE.d));
     if ("filter" in ctx) ctx.filter = `blur(${Math.max(1, CELL * 0.45 * k)}px)`;
 
     const dot = (p: Path2D, i: number) => {
@@ -90,7 +93,8 @@ export function BodyCanvas(props: Props) {
       for (let i = 0; i < ROWS * COLS; i++) {
         const v = heat[i];
         if (v < 0) continue;
-        (byLevel[v] ??= new Path2D()), dot(byLevel[v], i);
+        byLevel[v] ??= new Path2D();
+        dot(byLevel[v], i);
       }
       ctx.globalAlpha = editing ? 0.35 : 1;
       byLevel.forEach((p, v) => {
@@ -105,12 +109,17 @@ export function BodyCanvas(props: Props) {
       const m = paint[view];
       const p = new Path2D();
       let any = false;
-      for (let i = 0; i < m.length; i++) if (m[i]) (dot(p, i), (any = true));
+      for (let i = 0; i < m.length; i++) {
+        if (!m[i]) continue;
+        dot(p, i);
+        any = true;
+      }
       if (any) {
         ctx.fillStyle = getComputedStyle(c).getPropertyValue("--paint").trim() || "#17656a";
         ctx.fill(p);
       }
     }
+    ctx.restore();
   }, [heat, paint, view, zoom, size, editing]);
 
   useEffect(draw, [draw]);
@@ -284,7 +293,9 @@ export function BodyCanvas(props: Props) {
   const shownArrows = [...(paint?.arrows ?? arrows ?? []), ...(draftArrow ? [draftArrow] : [])].filter((a) => a.view === view);
   const leftMark = view === "front" ? "R" : "L";
   const rightMark = view === "front" ? "L" : "R";
-  const markerId = `arrowhead-${view}-${editing ? "e" : "v"}`;
+  const idSuffix = `${view}-${editing ? "e" : "v"}`;
+  const markerId = `arrowhead-${idSuffix}`;
+  const clipId = `body-clip-${idSuffix}`;
 
   return (
     <div className={`bodyc${editing ? " bodyc--edit" : ""} ${className ?? ""}`}>
@@ -299,17 +310,22 @@ export function BodyCanvas(props: Props) {
         data-tool={editing ? tool : undefined}
       >
         <svg className="bodyc-layer" viewBox={vb} aria-hidden="true">
-          <g className="silhouette">
-            {shapes.map((s) => <path key={s.regionId} d={s.d} />)}
-          </g>
+          <path className="silhouette" d={SILHOUETTE.d} />
         </svg>
         <canvas ref={canvas} className="bodyc-layer bodyc-canvas" />
         <svg className="bodyc-layer bodyc-over" viewBox={vb} role="group" aria-label={label}>
           <defs>
+            <clipPath id={clipId}>
+              <path d={SILHOUETTE.d} />
+            </clipPath>
             <marker id={markerId} viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
               <path d="M0 0L10 5L0 10z" className="arrowhead" />
             </marker>
           </defs>
+          <g className="landmarks" aria-hidden="true">
+            {LANDMARKS[view].map((d) => <path key={d} d={d} />)}
+          </g>
+          <g clipPath={`url(#${clipId})`}>
           {shapes.map((s) => {
             const on = selected.includes(s.regionId);
             const name = regionLabel(s.regionId);
@@ -318,7 +334,7 @@ export function BodyCanvas(props: Props) {
               <path
                 key={s.regionId}
                 d={s.d}
-                className={`seam${on ? " is-on" : ""}`}
+                className={`zone${on ? " is-on" : ""}`}
                 {...(interactive
                   ? {
                       role: "button",
@@ -336,6 +352,7 @@ export function BodyCanvas(props: Props) {
               />
             );
           })}
+          </g>
           {shownArrows.map((a, i) => (
             <line
               key={i}

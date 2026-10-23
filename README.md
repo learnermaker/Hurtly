@@ -39,7 +39,7 @@ Stack: React 19, TypeScript, Vite, Dexie (IndexedDB), vite-plugin-pwa. The build
 
 ```
 src/
-  data/regions.ts     body areas and figure outlines (left/right handled per view)
+  data/regions.ts     the body figure outline, landmarks and area zones (left/right handled per view)
   lib/mask.ts         painted areas as a grid over the figure; areas are worked out from the paint
   components/BodyCanvas.tsx  painting, arrows, pinch-zoom, heat maps
   data/questions.ts   offline follow-up questions
