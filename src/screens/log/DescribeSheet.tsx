@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Sheet } from "../../components/Controls";
+import { DeviceAiSetup } from "../../components/DeviceAiSetup";
+import { useSettings } from "../../lib/settings";
 import { parseDescription } from "../../lib/ai";
 import { errorText } from "../../lib/format";
 import { listen, speechSupported } from "../../lib/speech";
@@ -17,6 +19,7 @@ export function DescribeSheet({ open, ai, onClose, onParsed }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stopListening, setStopListening] = useState<null | (() => void)>(null);
+  const { aiMode } = useSettings();
 
   useEffect(() => {
     if (open) return;
@@ -105,13 +108,15 @@ export function DescribeSheet({ open, ai, onClose, onParsed }: Props) {
             )}
           </div>
           {error && <p className="error" role="alert">{error}</p>}
-          <p className="fine">Sent to Gemini with your own key.</p>
+          <p className="fine">{aiMode === "device" ? "Read on this device. Nothing leaves it." : "Sent to Gemini with your own key."}</p>
         </>
       ) : (
         <div className="empty">
-          <p>Describing pain in your own words uses Gemini with your own API key. Add a key in Settings to turn it on.</p>
-          <p className="muted">You can always paint on the body instead. It works offline.</p>
-          <a className="btn btn-primary" href="#/settings" onClick={onClose}>Open Settings</a>
+          <p>Describing pain in your own words needs the AI assistant. It can run privately on this device, or use Gemini with your own key.</p>
+          <DeviceAiSetup compact />
+          <p className="muted">
+            Or <a href="#/settings" onClick={onClose}>choose an option in Settings</a>. You can always paint on the body instead; it works offline.
+          </p>
         </div>
       )}
     </Sheet>

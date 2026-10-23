@@ -1,4 +1,5 @@
 import { generateJson } from "./gemini";
+import { deviceJson } from "./ondevice";
 import { getSettings } from "./settings";
 import { REGIONS, isRegionId, regionLabel } from "../data/regions";
 import { PATTERNS, QUALITIES, type Entry, type Pattern, type Quality } from "./types";
@@ -10,7 +11,8 @@ You never diagnose, name conditions, or recommend treatments or medicines.
 Use plain, warm, everyday language. Be brief.`;
 
 function request<T>(prompt: string, schema: object, signal?: AbortSignal, system = SYSTEM) {
-  const { geminiKey, model } = getSettings();
+  const { aiMode, geminiKey, model } = getSettings();
+  if (aiMode === "device") return deviceJson<T>({ system, prompt, schema, signal });
   return generateJson<T>({ key: geminiKey, model, system, prompt, schema, signal });
 }
 

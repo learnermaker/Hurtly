@@ -410,3 +410,14 @@ textarea.input { resize: vertical; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- AI choice ---------- */
+.choice { display: grid; gap: 8px; margin: 12px 0 16px; }
+.choice-item { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: var(--radius-m); background: var(--surface); cursor: pointer; }
+.choice-item.is-on { border-color: var(--accent); background: var(--accent-soft); }
+.choice-item input { width: 20px; height: 20px; margin-top: 3px; accent-color: var(--accent); flex: none; }
+.choice-title { display: block; font-weight: 700; }
+.choice-sub { display: block; font-size: 15px; color: var(--ink-2); }
+.device-ai { margin: 8px 0 16px; }
+.ok { color: var(--accent); font-weight: 700; }
+.progress { width: 100%; height: 8px; accent-color: var(--accent); margin-top: 8px; }
