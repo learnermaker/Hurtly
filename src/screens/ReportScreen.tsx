@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { BodyFigure } from "../components/BodyFigure";
+import { BodyCanvas } from "../components/BodyCanvas";
 import { RangePicker } from "../components/RangePicker";
 import { allEntries } from "../lib/db";
-import { heat, inRange, overview, summarizeRegions } from "../lib/stats";
+import { inRange, overview, summarizeRegions } from "../lib/stats";
+import { heatCells, paintOf } from "../lib/mask";
 import { daysAgo, formatDate } from "../lib/format";
 import { regionLabel } from "../data/regions";
 import { aiReady, useSettings } from "../lib/settings";
@@ -23,7 +24,9 @@ export function ReportScreen() {
   const scoped = useMemo(() => (entries ? (days ? inRange(entries, daysAgo(days)) : entries) : []), [entries, days]);
   const regions = useMemo(() => summarizeRegions(scoped), [scoped]);
   const stats = useMemo(() => overview(scoped), [scoped]);
-  const h = useMemo(() => heat(scoped), [scoped]);
+  const heatFront = useMemo(() => heatCells(scoped, "front"), [scoped]);
+  const heatBack = useMemo(() => heatCells(scoped, "back"), [scoped]);
+  const arrows = useMemo(() => scoped.flatMap((e) => (e.kind === "pain" ? paintOf(e).arrows : [])), [scoped]);
   const notes = useMemo(() => scoped.filter((e) => e.kind === "pain" && (e.note || e.followUps.length)).slice(-8).reverse(), [scoped]);
 
   if (!entries) return null;
@@ -96,8 +99,8 @@ export function ReportScreen() {
             )}
 
             <div className="figure-pair figure-pair-report">
-              <BodyFigure view="front" heat={h} label="Front: worst intensity per area" />
-              <BodyFigure view="back" heat={h} label="Back: worst intensity per area" />
+              <BodyCanvas view="front" heat={heatFront} arrows={arrows} label="Front view: painted pain areas, coloured by worst intensity" />
+              <BodyCanvas view="back" heat={heatBack} arrows={arrows} label="Back view: painted pain areas, coloured by worst intensity" />
             </div>
 
             {regions.length > 0 && (

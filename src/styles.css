@@ -9,6 +9,7 @@
   --accent: #17656a;
   --accent-ink: #ffffff;
   --accent-soft: #dcecea;
+  --paint: rgba(23, 101, 106, 0.82);
   --danger: #a3302b;
   --safety-bg: #fbe9e4;
   --safety-ink: #6e1f17;
@@ -32,6 +33,7 @@
     --accent: #62bfba;
     --accent-ink: #0b1b1c;
     --accent-soft: #1f3a3a;
+    --paint: rgba(98, 191, 186, 0.8);
     --danger: #f08a7f;
     --safety-bg: #3a1d19;
     --safety-ink: #ffd9d2;
@@ -193,30 +195,55 @@ textarea.input { resize: vertical; }
 .badge { display: inline-grid; place-items: center; min-width: 34px; height: 34px; border-radius: 10px; font-weight: 800; font-size: 16px; flex: none; }
 
 /* ---------- Body figure ---------- */
-.figure { display: block; width: 100%; height: auto; touch-action: manipulation; }
-.figure-side { font-size: 13px; font-weight: 800; fill: var(--ink-2); font-family: var(--font); }
-.region {
-  fill: var(--body);
-  stroke: var(--paper);
-  stroke-width: 2.5;
-  stroke-linejoin: round;
-  transition: fill 120ms ease;
+.bodyc { position: relative; }
+.bodyc-stage {
+  position: relative;
+  aspect-ratio: 200 / 470;
+  width: 100%;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
-.figure [role="button"] { cursor: pointer; }
-.figure [role="button"]:hover { fill: var(--body-hover); }
-.figure [role="button"]:focus-visible { outline: none; stroke: var(--accent); stroke-width: 3; }
-.figure--log .region.has-heat { opacity: 0.55; }
-.region.is-selected,
-.figure [role="button"].is-selected:hover {
-  fill: var(--accent) !important;
-  opacity: 1 !important;
-  stroke: var(--accent-ink);
-}
+.bodyc--edit .bodyc-stage { touch-action: none; cursor: crosshair; }
+.bodyc--edit .bodyc-stage[data-tool="erase"] { cursor: cell; }
+.bodyc:not(.bodyc--edit) .bodyc-stage { cursor: pointer; }
+.bodyc--log .bodyc-stage { width: auto; height: min(54dvh, 520px); margin: 0 auto; }
+.bodyc-layer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.silhouette path { fill: var(--body); stroke: var(--body); stroke-width: 5; stroke-linejoin: round; }
+.seam { fill: transparent; stroke: var(--paper); stroke-width: 0.7; opacity: 0.8; }
+.seam:focus-visible { outline: none; stroke: var(--accent); stroke-width: 2.5; opacity: 1; }
+.spread { stroke: var(--ink); stroke-linecap: round; fill: none; }
+.arrowhead { fill: var(--ink); }
+.bodyc-side { position: absolute; top: 4px; font-size: 13px; font-weight: 800; color: var(--ink-2); }
+.bodyc-side-l { left: 4%; }
+.bodyc-side-r { right: 4%; }
 
-.figure-stage { margin: 0 auto; }
-.figure-stage .figure { height: min(56dvh, 520px); width: auto; max-width: 100%; margin: 0 auto; }
+.zoom { position: absolute; right: 0; bottom: 4px; display: flex; flex-direction: column; gap: 8px; }
+.zoom-btn {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.zoom-btn:disabled { opacity: 0.35; cursor: default; }
+
 .figure-caption { text-align: center; font-size: 14px; color: var(--ink-2); margin: 6px 0 0; }
 .figure-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 420px; margin: 0 auto; }
+
+.tools { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 12px; }
+.tools .icon-btn:disabled { opacity: 0.35; cursor: default; }
+.tool-hint { text-align: center; font-size: 14px; color: var(--ink-2); margin: 8px 0 0; }
+.seg-btn { position: relative; }
+.seg-dot { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
 
 /* ---------- Log ---------- */
 .log-actions { margin-top: 16px; }
@@ -377,7 +404,6 @@ textarea.input { resize: vertical; }
   .screen { padding: 0; max-width: none; }
   .report { border: 0; padding: 0; margin: 0; }
   .report .stats div { background: #fff; }
-  .region { stroke: #fff; }
 }
 
 @media (prefers-reduced-motion: reduce) {

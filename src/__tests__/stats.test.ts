@@ -1,4 +1,4 @@
-import { dailySeries, heat, overview, summarizeRegions, trendOf } from "../lib/stats";
+import { dailySeries, overview, summarizeRegions, trendOf } from "../lib/stats";
 import type { Entry } from "../lib/types";
 
 const DAY = 86_400_000;
@@ -52,10 +52,6 @@ describe("summaries", () => {
 
   it("keeps each day's worst reading", () => {
     expect(dailySeries(entries, "knee-l").map((p) => p.value)).toEqual([3, 7, 8]);
-  });
-
-  it("colours by highest intensity and ignores pain-free check-ins", () => {
-    expect(heat(entries)).toEqual({ "knee-l": 8, "hip-l": 5 });
   });
 
   it("counts pain-free days only when no pain was logged that day", () => {

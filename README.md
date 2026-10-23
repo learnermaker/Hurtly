@@ -4,7 +4,7 @@ Mark where it hurts, describe it in plain words, and keep a history your clinici
 
 BodyTrace is a personal pain diary that installs on your phone. It's built around one loop:
 
-1. **Mark it.** Tap areas on a front/back body figure, or say it in your own words ("burning in my lower right back, about a 6, worse when I sit").
+1. **Mark it.** Paint where it hurts on a front/back body figure with your finger, draw arrows where it spreads, and pinch to zoom for small areas. Or say it in your own words ("burning in my lower right back, about a 6, worse when I sit").
 2. **Describe it.** Choose a 0–10 intensity and what it feels like. More detail (pattern, what makes it worse or better, what it gets in the way of) is optional.
 3. **Watch it change.** Each area gets its own timeline: when it started, typical and worst intensity, and whether it's getting worse, easing or holding steady.
 4. **Share it.** A one-page report you can print or save as a PDF for a doctor or physio, plus a spreadsheet export.
@@ -20,7 +20,7 @@ What the AI does:
 
 | Feature | Without AI | With your Gemini key |
 |---|---|---|
-| Logging | Tap the body figure or search areas | Also: describe it by voice or text and the form fills itself; you check it before saving |
+| Logging | Paint on the body figure or search areas | Also: describe it by voice or text and the form fills itself; you check it before saving |
 | Follow-up questions | A fixed set of plain-language questions | 1–2 questions based on your history ("Last time you said it spread to your leg…") |
 | Report | Tables, body map, your notes | Also: a short summary written in your words, plus questions to ask your clinician |
 
@@ -40,6 +40,8 @@ Stack: React 19, TypeScript, Vite, Dexie (IndexedDB), vite-plugin-pwa. The build
 ```
 src/
   data/regions.ts     body areas and figure outlines (left/right handled per view)
+  lib/mask.ts         painted areas as a grid over the figure; areas are worked out from the paint
+  components/BodyCanvas.tsx  painting, arrows, pinch-zoom, heat maps
   data/questions.ts   offline follow-up questions
   lib/ai.ts           Gemini prompts and checks on everything the AI returns
   lib/gemini.ts       minimal BYOK Gemini REST client
