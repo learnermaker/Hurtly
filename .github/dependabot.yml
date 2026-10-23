@@ -1,13 +1,18 @@
 version: 2
 updates:
+  # Minor and patch updates arrive together each month. Each major version
+  # gets its own pull request, since those can need code changes.
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: monthly
     groups:
-      dependencies:
-        patterns: ["*"]
+      minor-and-patch:
+        update-types: [minor, patch]
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
+    groups:
+      actions:
+        update-types: [minor, patch]
