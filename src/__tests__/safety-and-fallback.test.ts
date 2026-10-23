@@ -1,33 +1,28 @@
 import { safetyNotice } from "../lib/safety";
 import { fallbackQuestions } from "../data/questions";
-import type { Entry } from "../lib/types";
+import { makeEntry } from "./helpers";
 
-const base = { qualities: [] as Entry["qualities"], note: undefined as string | undefined };
-
-describe("safetyNotice", () => {
-  it("flags strong chest pain", () => expect(safetyNotice({ ...base, regions: ["chest-l"], intensity: 7 })).toMatch(/emergency/));
-  it("flags chest pain described with breathlessness at any intensity", () =>
-    expect(safetyNotice({ ...base, regions: ["chest-r"], intensity: 2, note: "short of breath" })).toMatch(/emergency/));
-  it("flags back pain with bladder changes", () =>
-    expect(safetyNotice({ ...base, regions: ["lower-back-l"], intensity: 4, note: "trouble with my bladder" })).toMatch(/urgent/));
-  it("stays quiet for everyday pain", () => expect(safetyNotice({ ...base, regions: ["knee-l"], intensity: 8 })).toBeNull());
+it.each([
+  ["strong chest pain", ["chest-l"], 7, undefined, /emergency/],
+  ["chest pain with breathlessness", ["chest-r"], 2, "short of breath", /emergency/],
+  ["back pain with bladder changes", ["lower-back-l"], 4, "trouble with my bladder", /urgent/],
+  ["everyday knee pain", ["knee-l"], 8, undefined, null],
+])("safety notice for %s", (_, regions, intensity, note, expected) => {
+  const notice = safetyNotice({ regions, intensity, qualities: [], note });
+  if (expected) expect(notice).toMatch(expected);
+  else expect(notice).toBeNull();
 });
 
-describe("fallbackQuestions", () => {
-  const entry: Entry = { id: "new", createdAt: 1, kind: "pain", regions: ["lower-back-r"], intensity: 5, qualities: ["stiff"], triggers: [], relief: [], impact: [], followUps: [], source: "tap" };
+describe("offline follow-up questions", () => {
+  const entry = makeEntry({ id: "new", regions: ["lower-back-r"], qualities: ["stiff"] });
 
   it("asks when a new area started, then something specific", () => {
     const qs = fallbackQuestions(entry, [entry]);
-    expect(qs).toHaveLength(2);
-    expect(qs[0].question).toBe("When did this start?");
-    expect(qs[1].options.length).toBeGreaterThan(1);
+    expect(qs.map((q) => q.question)).toEqual(["When did this start?", "Is it stiffest first thing in the morning?"]);
   });
 
   it("doesn't repeat questions already answered for a known area", () => {
-    const earlier: Entry = { ...entry, id: "old", followUps: [{ question: "Is it stiffest first thing in the morning?", answer: "Yes" }] };
-    const qs = fallbackQuestions(entry, [earlier, entry]).map((q) => q.question);
-    expect(qs).not.toContain("When did this start?");
-    expect(qs).not.toContain("Is it stiffest first thing in the morning?");
-    expect(qs).toContain("Does it spread down into a leg?");
+    const earlier = makeEntry({ ...entry, id: "old", followUps: [{ question: "Is it stiffest first thing in the morning?", answer: "Yes" }] });
+    expect(fallbackQuestions(entry, [earlier, entry]).map((q) => q.question)).toEqual(["Does it spread down into a leg?"]);
   });
 });

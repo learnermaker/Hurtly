@@ -11,7 +11,7 @@ export const H = 470;
 export const CELL = 2.5;
 export const COLS = W / CELL; // 80
 export const ROWS = H / CELL; // 188
-export const CELLS = COLS * ROWS;
+const CELLS = COLS * ROWS;
 
 export type Mask = Uint8Array; // one byte per cell: 0 or 1. Packed to bits only when stored.
 
@@ -179,8 +179,14 @@ export function regionsInPaint(p: Paint): string[] {
   return REGIONS.map((r) => r.id).filter((id) => ids.has(id));
 }
 
-export function isBlank(p: Paint): boolean {
-  return !p.front.some(Boolean) && !p.back.some(Boolean) && p.arrows.length === 0;
+export function mergePaint(a: Paint, b: Paint): Paint {
+  const out = clonePaint(a);
+  for (let i = 0; i < CELLS; i++) {
+    out.front[i] |= b.front[i];
+    out.back[i] |= b.back[i];
+  }
+  out.arrows.push(...b.arrows);
+  return out;
 }
 
 export function clonePaint(p: Paint): Paint {

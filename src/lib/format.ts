@@ -32,4 +32,6 @@ export function relativeDays(t: number, now = Date.now()): string {
   return `${Math.round(d / 30)} months ago`;
 }
 
-export { DAY };
+export function errorText(e: unknown, fallback = "Something went wrong."): string {
+  return e instanceof Error && e.message ? e.message : fallback;
+}

@@ -1,27 +1,23 @@
 import { useMemo, useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
 import { BodyCanvas } from "../components/BodyCanvas";
 import { RangePicker } from "../components/RangePicker";
-import { allEntries } from "../lib/db";
-import { inRange, overview, summarizeRegions } from "../lib/stats";
+import { useRecentEntries } from "../lib/hooks";
+import { TREND_LABEL, overview, summarizeRegions } from "../lib/stats";
 import { heatCells, paintOf } from "../lib/mask";
-import { daysAgo, formatDate } from "../lib/format";
+import { daysAgo, errorText, formatDate } from "../lib/format";
 import { regionLabel } from "../data/regions";
 import { aiReady, useSettings } from "../lib/settings";
 import { writeSummary, type Narrative } from "../lib/ai";
 import { download, toCsv } from "../lib/export";
-import { TREND_TEXT } from "./HistoryScreen";
-import type { Entry } from "../lib/types";
 
 export function ReportScreen() {
   const settings = useSettings();
-  const entries = useLiveQuery(allEntries, [], undefined as Entry[] | undefined);
   const [days, setDays] = useState(30);
+  const { all: entries, scoped } = useRecentEntries(days);
   const [narrative, setNarrative] = useState<Narrative | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const scoped = useMemo(() => (entries ? (days ? inRange(entries, daysAgo(days)) : entries) : []), [entries, days]);
   const regions = useMemo(() => summarizeRegions(scoped), [scoped]);
   const stats = useMemo(() => overview(scoped), [scoped]);
   const heatFront = useMemo(() => heatCells(scoped, "front"), [scoped]);
@@ -40,7 +36,7 @@ export function ReportScreen() {
     try {
       setNarrative(await writeSummary({ from, to }, stats, regions, scoped));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -120,7 +116,7 @@ export function ReportScreen() {
                       <td>{r.count}</td>
                       <td>{r.average}</td>
                       <td>{r.peak}</td>
-                      <td>{TREND_TEXT[r.trend]}</td>
+                      <td>{TREND_LABEL[r.trend]}</td>
                       <td>{formatDate(r.first)}</td>
                     </tr>
                   ))}

@@ -3,6 +3,13 @@ import { dayKey } from "./format";
 
 export type Trend = "worse" | "better" | "steady" | "too few";
 
+export const TREND_LABEL: Record<Trend, string> = {
+  worse: "Getting worse",
+  better: "Easing",
+  steady: "Steady",
+  "too few": "Too early to tell",
+};
+
 export interface RegionSummary {
   regionId: string;
   count: number;

@@ -72,11 +72,11 @@ export interface Entry {
   source: "tap" | "describe" | "repeat";
 }
 
-export type Draft = Omit<Entry, "id" | "createdAt" | "kind" | "followUps">;
+/** The details being filled in for a new entry. Where it hurts lives in the paint, not here. */
+export type Draft = Omit<Entry, "id" | "createdAt" | "kind" | "followUps" | "regions" | "drawing">;
 
-export function emptyDraft(regions: string[] = []): Draft {
+export function emptyDraft(): Draft {
   return {
-    regions,
     intensity: 4,
     qualities: [],
     triggers: [],
@@ -84,6 +84,11 @@ export function emptyDraft(regions: string[] = []): Draft {
     impact: [],
     source: "tap",
   };
+}
+
+export function draftFrom(e: Entry): Draft {
+  const { intensity, qualities, pattern, triggers, relief, impact } = e;
+  return { intensity, qualities, pattern, triggers, relief, impact, source: "repeat" };
 }
 
 export function intensityWord(n: number): string {

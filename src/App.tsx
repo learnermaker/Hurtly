@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useRoute, type Route } from "./lib/route";
-import { LogScreen } from "./screens/LogScreen";
+import { LogScreen } from "./screens/log/LogScreen";
 import { HistoryScreen } from "./screens/HistoryScreen";
 import { RegionScreen } from "./screens/RegionScreen";
 import { ReportScreen } from "./screens/ReportScreen";

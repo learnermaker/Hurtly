@@ -1,29 +1,19 @@
 import { useMemo, useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
 import { BodyCanvas } from "../components/BodyCanvas";
 import { Sparkline } from "../components/Controls";
 import { EntryRow } from "../components/EntryRow";
 import { RangePicker } from "../components/RangePicker";
-import { allEntries } from "../lib/db";
-import { dailySeries, inRange, summarizeRegions, type Trend } from "../lib/stats";
+import { TREND_LABEL, dailySeries, summarizeRegions } from "../lib/stats";
+import { useRecentEntries } from "../lib/hooks";
 import { heatCells } from "../lib/mask";
-import { dayKey, daysAgo, formatDay, relativeDays } from "../lib/format";
+import { dayKey, formatDay, relativeDays } from "../lib/format";
 import { regionLabel } from "../data/regions";
 import { navigate } from "../lib/route";
 import type { Entry } from "../lib/types";
 
-export const TREND_TEXT: Record<Trend, string> = {
-  worse: "Getting worse",
-  better: "Easing",
-  steady: "Steady",
-  "too few": "Too early to tell",
-};
-
 export function HistoryScreen() {
-  const entries = useLiveQuery(allEntries, [], undefined as Entry[] | undefined);
   const [days, setDays] = useState(30);
-
-  const scoped = useMemo(() => (entries ? (days ? inRange(entries, daysAgo(days)) : entries) : []), [entries, days]);
+  const { all: entries, scoped } = useRecentEntries(days);
   const regions = useMemo(() => summarizeRegions(scoped), [scoped]);
   const heatFront = useMemo(() => heatCells(scoped, "front"), [scoped]);
   const heatBack = useMemo(() => heatCells(scoped, "back"), [scoped]);
@@ -77,7 +67,7 @@ export function HistoryScreen() {
                   <span className="area-text">
                     <span className="area-name">{regionLabel(r.regionId)}</span>
                     <span className="area-sub">
-                      {TREND_TEXT[r.trend]} · last {relativeDays(r.last)}
+                      {TREND_LABEL[r.trend]} · last {relativeDays(r.last)}
                     </span>
                   </span>
                   <Sparkline points={dailySeries(scoped, r.regionId)} width={96} height={30} />

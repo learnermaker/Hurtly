@@ -47,7 +47,8 @@ src/
   lib/gemini.ts       minimal BYOK Gemini REST client
   lib/stats.ts        per-area summaries, trends, daily series
   lib/safety.ts       offline emergency-warning rules
-  screens/            Log, History, Area detail, Report, Settings
+  screens/log/        Log screen, its sheets, and the paint editor hook
+  screens/            History, Area detail, Report, Settings
 ```
 
 ## Not medical advice
